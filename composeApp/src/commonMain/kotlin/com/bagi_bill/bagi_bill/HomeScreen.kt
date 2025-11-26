@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,8 +34,17 @@ import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview // Preview annotation untuk melihat ui di IDE
@@ -42,10 +52,15 @@ import androidx.compose.ui.Modifier
 fun HomeScreen() {
     // Scroll behavior untuk animasi top bar (opsional, tapi bagus buat UX)
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    // Snackbar host state
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     // Scaffold, sebagaia kanvas dasar layout pada material design.
     // Fungsi ini otomatis mengatur ruang untuk UI bawaan dari OS (misalnya status bar, navigation bar)
     Scaffold(
+        // snackbarHost untuk menampilkan snackbar
+        snackbarHost = { SnackbarHost( hostState = snackbarHostState)},
         // modifier untuk mengatur tampilan dan behavior dari layout
         modifier = Modifier
             .fillMaxSize() // mengisi seluruh ruang yang tersedia
@@ -126,6 +141,29 @@ fun HomeScreen() {
                 scrollBehavior = scrollBehavior
             )
         },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    /* TODO: aksi fab */
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Fungsi Scan QR Code belum tersedia")
+                    }
+                },
+                contentColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(50),
+                modifier = Modifier
+                    .padding(vertical = 12.dp) // padding, agar tidak terlalu bawah
+                    .width(80.dp)
+                    .height(46.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.QrCodeScanner,
+                    contentDescription = "Scan QR Code"
+                )
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center,
     ) { innerPadding ->
         Column(
             modifier = Modifier
