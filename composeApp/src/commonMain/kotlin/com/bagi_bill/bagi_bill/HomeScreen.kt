@@ -1,12 +1,17 @@
 package com.bagi_bill.bagi_bill
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,22 +39,38 @@ import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.CallSplit
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material3.BottomAppBar
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.AlignmentLine
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 
+/**
+ * OptIn annotation untuk menggunakan API eksperimental dari Material3.
+ * Preview annotation untuk melihat ui di IDE.
+ * Composable annotation untuk menandai fungsi sebagai UI Composable
+ */
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview // Preview annotation untuk melihat ui di IDE
-@Composable // Composable, digunakan untuk membuat fungsi UI
+@Preview
+@Composable
 fun HomeScreen() {
+
     // Scroll behavior untuk animasi top bar (opsional, tapi bagus buat UX)
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     // Snackbar host state
@@ -79,6 +100,9 @@ fun HomeScreen() {
                 navigationIcon = {
                     IconButton(onClick = {
                         /* TODO: Aksi Profil */
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Fungsi Profile belum tersedia")
+                        }
                     }) {
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
@@ -126,6 +150,9 @@ fun HomeScreen() {
                 actions = {
                     IconButton(onClick = {
                         /* TODO: Aksi Bantuan */
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Fungsi Bantuan belum tersedia")
+                        }
                     }) {
                         Icon(
                             imageVector = Icons.Default.Help,
@@ -171,23 +198,313 @@ fun HomeScreen() {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Area Konten lainnya
-            Text("Konten di sini", modifier = Modifier.padding(16.dp))
+            // Create Group Section
+            HomeCreateGroupScreen()
+
+            // Manual Input Bill Section
+            HomeManualInputBillScreen()
         }
     }
 }
 
 @Composable
 fun HomeCreateGroupScreen() {
+    val dummyContacts = listOf("Andi", "Budi", "Citra", "Dedi", "Eka", "Fani")
 
+    val gradientPurple = Brush.verticalGradient(
+        colors = listOf(
+            Color.White,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+        )
+    )
+
+    /**
+     * Card
+     * Sebagai container pada section pembuatan grup
+     */
+    Card(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        // Container Column di dalam Card
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            // Row, sebagai card header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Buat grup",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+
+                /**
+                 * Surface, sebuah container pembungkus tombol "lihat semua"
+                 * Memiliki behavior onClick
+                 */
+                Surface(
+                    onClick = {
+                        /* TODO: fitur lihat semua */
+                    },
+                    shape = RoundedCornerShape(100),
+                    color = Color.Transparent,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                ) {
+                    // Tombol panah ke kanan
+                    Row(
+                        modifier = Modifier
+                            .background(
+                                brush = gradientPurple,
+                                shape = RoundedCornerShape(100)
+                            )
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Lihat semua",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.Black,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.width((4.dp)))
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
+            // Spacer
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Row, sebagai container untuk content pembuatan grup
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF8F9FA), RoundedCornerShape(12.dp))
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // TODO: tambahkan kontak deskripsi dibawah text "Kontakmu"
+                Column(
+                    modifier = Modifier
+                        .weight(1f),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "Kontakmu",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "Pilih bestie atau bikin grup biar patungan makin sat-set",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ContactAvatarStack(avatars = dummyContacts)
+                }
+            }
+        }
+    }
 }
 
 @Composable
 fun HomeManualInputBillScreen() {
+    Card(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Bikin baru",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
 
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Pilih cara yang kamu mau",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Normal
+                )
+            }
+
+            // Spacer
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Section content card (atur jumlah sendiri)
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+                color = Color.Transparent,
+                onClick = { }
+            ) {
+                // Icon(kiri) + Text(title, description) (kanan)
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.CallSplit,
+                        contentDescription = "Manual Input Bill",
+                        modifier = Modifier
+                            .border(1.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(50))
+                            .padding(8.dp)
+                            .size(24.dp)
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(35))
+                            .padding(4.dp),
+                        tint = Color.White
+                    )
+
+                    // spacer
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    // text container
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Atur jumlahnya sendiri",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = "Lebih cepat buat bagi rata, gak usah pake struk.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+
+                    // spacer
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Icon(
+                        imageVector = Icons.Default.ArrowForward,
+                        contentDescription = "Manual Input Bill",
+                        tint = Color.Black,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
 fun HomeHistoryScreen() {
 
+}
+
+@Composable
+fun ContactAvatarStack(
+    avatars: List<String>,
+    maxAvatars: Int = 3,
+    modifier: Modifier = Modifier
+) {
+    // Hitung berapa avatar yang akan ditampilkan
+    val displayCount = minOf(maxAvatars, avatars.size)
+    val remaining = avatars.size - maxAvatars
+    val avatarSize = 40.dp
+    val overlapAmount = 12.dp
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(-overlapAmount)
+    ) {
+        // loop untuk menampilkan avatar
+        for (i in 0 until displayCount) {
+            Surface(
+                modifier = Modifier
+                    .size(avatarSize)
+                    .border(2.dp, Color.White, CircleShape)
+                    .zIndex((displayCount - i).toFloat()),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    // Di sini nanti Image() asli. Sementara pakai Text inisial.
+                    Text(
+                        text = avatars[i].take(1),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // indikator kontak avatar lebih
+        if (remaining > 0) {
+            Surface(
+                modifier = Modifier
+                    .size(avatarSize)
+                    .border(2.dp, Color.White, CircleShape)
+                    .zIndex(0f),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "+$remaining",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+        }
+    }
 }
