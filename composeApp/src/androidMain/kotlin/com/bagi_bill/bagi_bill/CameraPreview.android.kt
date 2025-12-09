@@ -18,10 +18,16 @@ actual fun CameraPreview(
     modifier: Modifier,
     controller: CameraController,
     onPhotoCaptured: (ByteArray?) -> Unit,
+    onPermissionGranted: (Boolean) -> Unit,
     permissionDeniedContent: @Composable (onRequest: () -> Unit) -> Unit
 ) {
     // Cek permission kamera
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
+
+    // Update permission status ke parent composable
+    androidx.compose.runtime.LaunchedEffect(cameraPermissionState.status.isGranted) {
+        onPermissionGranted(cameraPermissionState.status.isGranted)
+    }
 
     if (cameraPermissionState.status.isGranted) {
         // Permission granted → Tampilkan kamera

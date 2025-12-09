@@ -16,17 +16,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/**
- * PreviewScreen - UI untuk meninjau foto sebelum dikonfirmasi
- * 
- * Tampilan:
- * - Gambar fullscreen
- * - Tombol Back (kiri atas)
- * - Tombol "Foto ulang" dan "Pakai foto ini" (bawah)
- */
 @Composable
 fun PreviewScreen(
     photoBytes: ByteArray,
+    isFromGallery: Boolean, // <--- PARAMETER BARU
     onRetake: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -54,7 +47,7 @@ fun PreviewScreen(
             )
         }
 
-        // Tombol Back (Kiri Atas)
+        // Tombol Back (Kiri Atas) - Tetap ada agar user bisa batal
         IconButton(
             onClick = onRetake,
             modifier = Modifier
@@ -78,25 +71,29 @@ fun PreviewScreen(
                 .navigationBarsPadding(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Tombol Foto Ulang
-            Button(
-                onClick = onRetake,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.LightGray
-                ),
-                shape = RoundedCornerShape(25.dp)
-            ) {
-                Text(
-                    text = "Foto ulang",
-                    color = Color.Black,
-                    fontWeight = FontWeight.SemiBold
-                )
+            // LOGIKA: Jika BUKAN dari galeri (alias dari kamera), tampilkan tombol "Foto Ulang"
+            if (!isFromGallery) {
+                Button(
+                    onClick = onRetake,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.LightGray
+                    ),
+                    shape = RoundedCornerShape(25.dp)
+                ) {
+                    Text(
+                        text = "Foto ulang",
+                        color = Color.Black,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
 
-            // Tombol Pakai Foto
+            // Tombol Pakai Foto (Selalu Ada)
+            // Kalau dari galeri, dia akan otomatis melebar memenuhi baris (karena weight 1f)
+            // yang membuatnya terlihat rapi di tengah.
             Button(
                 onClick = onConfirm,
                 modifier = Modifier

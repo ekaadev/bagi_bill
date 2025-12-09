@@ -15,5 +15,6 @@ expect fun CameraPreview(
     modifier: Modifier,
     controller: CameraController,
     onPhotoCaptured: (ByteArray?) -> Unit,
+    onPermissionGranted: (Boolean) -> Unit = {},
     permissionDeniedContent: @Composable (onRequest: () -> Unit) -> Unit
 )

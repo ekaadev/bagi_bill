@@ -43,22 +43,28 @@ fun CameraScreen(
     onPhotoConfirmed: (ByteArray) -> Unit = {}
 ) {
     var capturedPhoto by remember { mutableStateOf<ByteArray?>(null) }
+    var isFromGallery by remember { mutableStateOf(false) }
 
     // Router
     if (capturedPhoto == null) {
         // Halaman Camera
         CameraUI(
             onBack = onExit,
-            onPhotoCaptured = { bytes ->
-                println("📸 Photo captured! Size: ${bytes.size} bytes")
+            onPhotoCaptured = { bytes, fromGallery ->
+                println("📸 Photo captured! Size: ${bytes.size} bytes, From Gallery: $fromGallery")
                 capturedPhoto = bytes
+                isFromGallery = fromGallery
             }
         )
     } else {
         // Halaman Preview
         PreviewScreen(
             photoBytes = capturedPhoto!!,
-            onRetake = { capturedPhoto = null },
+            isFromGallery = isFromGallery,
+            onRetake = { 
+                capturedPhoto = null
+                isFromGallery = false
+            },
             onConfirm = {
                 onPhotoConfirmed(capturedPhoto!!)
                 onExit()
@@ -73,17 +79,18 @@ fun CameraScreen(
 @Composable
 private fun CameraUI(
     onBack: () -> Unit,
-    onPhotoCaptured: (ByteArray) -> Unit
+    onPhotoCaptured: (ByteArray, Boolean) -> Unit // Boolean = isFromGallery
 ) {
     val controller = remember { CameraController() }
     var isFlashOn by remember { mutableStateOf(false) }
     var showGalleryPicker by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var isCameraPermissionGranted by remember { mutableStateOf(false) }
 
     if (showGalleryPicker) {
         GalleryImagePicker { bytes ->
-            if (bytes != null) onPhotoCaptured(bytes)
+            if (bytes != null) onPhotoCaptured(bytes, true) // true = dari gallery
             showGalleryPicker = false
         }
     }
@@ -95,11 +102,13 @@ private fun CameraUI(
             modifier = Modifier.fillMaxSize(),
             controller = controller,
             onPhotoCaptured = { bytes ->
-                if (bytes != null) onPhotoCaptured(bytes)
+                if (bytes != null) onPhotoCaptured(bytes, false) // false = dari camera
             },
 
-            // Set permission status
-            onPermissionGranted =  { granted -> isCameraPermissionGranted = granted
+            // Set permission status - callback ini akan dipanggil ketika permission berubah
+            onPermissionGranted = { granted -> 
+                isCameraPermissionGranted = granted
+                println("🔑 Camera permission granted: $granted")
             },
 
             // === UPDATE BAGIAN INI (TAMPILAN IZIN) ===
@@ -130,7 +139,7 @@ private fun CameraUI(
 
                         // Teks Deskripsi
                         Text(
-                            text = "Biar kamu bisa ambil foto struk buat hitung split billnya",
+                            text = "Tip: Biar kamu bisa ambil foto struk buat hitung split billnya",
                             color = Color.LightGray,
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -205,16 +214,18 @@ private fun CameraUI(
         // 5. TOMBOL FLASH
         IconButton(
             onClick = {
-                isFlashOn = !isFlashOn
-                controller.switchFlash()
+                if (isCameraPermissionGranted) {
+                    isFlashOn = !isFlashOn
+                    controller.switchFlash()
+                }
             },
-            enabled = isCameraPermissionGranted(),
+            enabled = isCameraPermissionGranted,
             modifier = Modifier.align(Alignment.BottomEnd).padding(64.dp)
         ) {
             Icon(
                 imageVector = if (isFlashOn) Icons.Default.FlashOn else Icons.Default.FlashOff,
                 contentDescription = "Flash",
-                tint = Color.White,
+                tint = if (isCameraPermissionGranted) Color.White else Color.Gray,
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -238,11 +249,15 @@ private fun CameraUI(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 50.dp)
                 .size(80.dp)
-                .border(4.dp, Color.White, CircleShape)
+                .border(4.dp, if (isCameraPermissionGranted) Color.White else Color.Gray, CircleShape)
                 .padding(6.dp)
                 .clip(CircleShape)
-                .background(Color.White)
-                .clickable (enabled = isCamerapermissionGranted) { controller.capture() }
+                .background(if (isCameraPermissionGranted) Color.White else Color.Gray)
+                .clickable(enabled = isCameraPermissionGranted) { 
+                    if (isCameraPermissionGranted) {
+                        controller.capture()
+                    }
+                }
         )
 
         // Snackbar

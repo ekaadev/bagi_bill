@@ -12,11 +12,16 @@ fun CameraPreviewContent(
     modifier: Modifier = Modifier,
     controller: CameraController,
     onPhotoCaptured: (ByteArray?) -> Unit,
+    onPermissionGranted: (Boolean) -> Unit = {},
     viewModel: CameraPreviewViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val surfaceRequest by viewModel.surfaceRequest.collectAsState()
+
+    LaunchedEffect(Unit) {
+        onPermissionGranted(true)
+    }
 
     // 1. Nyalakan Mesin
     LaunchedEffect(lifecycleOwner) {

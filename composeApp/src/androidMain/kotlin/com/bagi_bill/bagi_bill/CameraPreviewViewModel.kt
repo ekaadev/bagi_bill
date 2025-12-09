@@ -1,6 +1,8 @@
 package com.bagi_bill.bagi_bill
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Matrix
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -16,8 +18,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.awaitCancellation
-import androidx.concurrent.futures.await // Wajib ada library concurrent-futures-ktx
-import java.nio.ByteBuffer
+import androidx.concurrent.futures.await
+import java.io.ByteArrayOutputStream
 
 class CameraPreviewViewModel : ViewModel() {
 
@@ -35,13 +37,6 @@ class CameraPreviewViewModel : ViewModel() {
         .build()
 
     private var camera: Camera? = null
-
-    fun toggleFlash() {
-        camera?.let { cam ->
-            val currentTorchState = cam.cameraInfo.torchState.value ?: 0
-            cam.cameraControl.enableTorch(currentTorchState == 0)
-        }
-    }
 
     suspend fun bindToCamera(appContext: Context, lifecycleOwner: LifecycleOwner) {
         val processCameraProvider = ProcessCameraProvider.getInstance(appContext).await()
@@ -62,36 +57,60 @@ class CameraPreviewViewModel : ViewModel() {
         }
     }
 
+    // === BAGIAN INI YANG PENTING (LOGIC ROTASI) ===
     fun captureImage(context: Context, onPhotoCaptured: (ByteArray?) -> Unit) {
-        // Kita butuh Executor (Main Thread) buat jalanin kamera
         val executor = ContextCompat.getMainExecutor(context)
 
-        // Perintah CameraX: "Ambil Gambar!"
         imageCaptureUseCase.takePicture(executor, object : ImageCapture.OnImageCapturedCallback() {
 
-            // Kalau Berhasil:
             override fun onCaptureSuccess(image: ImageProxy) {
-                // 1. Ambil data mentah (Buffer) dari memori kamera
-                val buffer: ByteBuffer = image.planes[0].buffer
+                try {
+                    // 1. Ambil info rotasi dari sensor kamera (Misal: 90 derajat)
+                    val rotationDegrees = image.imageInfo.rotationDegrees.toFloat()
 
-                // 2. Siapkan wadah ByteArray sesuai ukuran gambar
-                val bytes = ByteArray(buffer.remaining())
+                    // 2. Ubah ImageProxy ke Bitmap agar bisa diedit
+                    val bitmap = image.toBitmap()
 
-                // 3. Salin data dari Buffer ke ByteArray
-                buffer.get(bytes)
+                    // 3. Siapkan Matrix untuk memutar gambar
+                    val matrix = Matrix()
 
-                // 4. Kirim paketnya ke UI Common
-                onPhotoCaptured(bytes)
+                    // A. Putar gambar sesuai sensor (Biar TEGAK LURUS)
+                    matrix.postRotate(rotationDegrees)
 
-                // 5. WAJIB TUTUP IMAGE (Kalau tidak, kamera bakal macet)
-                image.close()
+                    // 4. Buat Bitmap baru yang sudah diputar
+                    val rotatedBitmap = Bitmap.createBitmap(
+                        bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
+                    )
+
+                    // 5. Kompres balik jadi ByteArray (JPEG)
+                    val stream = ByteArrayOutputStream()
+                    // Quality 100 = Kualitas Maksimal
+                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+                    val byteArray = stream.toByteArray()
+
+                    // 6. Kirim ke UI
+                    onPhotoCaptured(byteArray)
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    onPhotoCaptured(null)
+                } finally {
+                    // PENTING: Wajib tutup image biar memori tidak bocor
+                    image.close()
+                }
             }
 
-            // Kalau Gagal:
             override fun onError(exception: ImageCaptureException) {
                 exception.printStackTrace()
-                onPhotoCaptured(null) // Lapor gagal
+                onPhotoCaptured(null)
             }
         })
+    }
+
+    fun toggleFlash() {
+        camera?.let { cam ->
+            val currentTorchState = cam.cameraInfo.torchState.value ?: 0
+            cam.cameraControl.enableTorch(currentTorchState == 0)
+        }
     }
 }
