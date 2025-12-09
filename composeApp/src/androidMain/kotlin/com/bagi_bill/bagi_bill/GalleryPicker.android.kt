@@ -24,9 +24,9 @@ actual fun GalleryImagePicker(onImagePicked: (ByteArray?) -> Unit) {
                 val bytes = inputStream?.readBytes()
                 inputStream?.close()
                 onImagePicked(bytes)
-                println("✅ Image picked from gallery! Size: ${bytes?.size ?: 0} bytes")
+                println("Image picked from gallery! Size: ${bytes?.size ?: 0} bytes")
             } catch (e: Exception) {
-                println("❌ Failed to read image: ${e.message}")
+                println("Failed to read image: ${e.message}")
                 onImagePicked(null)
             }
         } else {
