@@ -41,9 +41,13 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowRightAlt
 import androidx.compose.material.icons.filled.CallSplit
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
@@ -231,7 +235,7 @@ fun HomeCreateGroupScreen() {
      */
     Card(
         modifier = Modifier
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
@@ -345,7 +349,7 @@ fun HomeCreateGroupScreen() {
 fun HomeManualInputBillScreen() {
     Card(
         modifier = Modifier
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
@@ -438,9 +442,9 @@ fun HomeManualInputBillScreen() {
                     Spacer(modifier = Modifier.width(4.dp))
 
                     Icon(
-                        imageVector = Icons.Default.ArrowForward,
+                        imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Manual Input Bill",
-                        tint = Color.Black,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -453,7 +457,7 @@ fun HomeManualInputBillScreen() {
 fun HomeHistoryScreen() {
     Card(
         modifier = Modifier
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
@@ -618,12 +622,34 @@ fun ListHistorySplitBill() {
 
         // lihat selengkapnya
         Surface(
-
+            modifier = Modifier
+                .fillMaxWidth(),
+            color = Color.Transparent,
+            shape = RoundedCornerShape(50.dp),
+            border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+            onClick = {
+                /* TODO: FITUR Lihat Selengkapnya */
+            }
         ) {
             Row(
-
+                modifier = Modifier
+                    .padding(vertical = 10.dp, horizontal = 16.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                Text(
+                    text = "Lihat selengkapnya",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f)
+                )
 
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = "Lihat selengkapnya",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }
