@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -47,8 +48,10 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.SnackbarHost
@@ -58,6 +61,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.AlignmentLine
+import androidx.compose.ui.modifier.ModifierLocalReadScope
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 
@@ -203,6 +207,9 @@ fun HomeScreen() {
 
             // Manual Input Bill Section
             HomeManualInputBillScreen()
+
+            // History Section
+            HomeHistoryScreen()
         }
     }
 }
@@ -444,7 +451,43 @@ fun HomeManualInputBillScreen() {
 
 @Composable
 fun HomeHistoryScreen() {
+    Card(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        // Container dalam Card (paling awal)
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            // Title card
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Yang terakhir kamu buat",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
 
+            // Spacer
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Section content card
+            ListHistorySplitBill()
+        }
+    }
 }
 
 @Composable
@@ -504,6 +547,83 @@ fun ContactAvatarStack(
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun ListHistorySplitBill() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.Center
+    ) {
+        // item history split bill
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(),
+            color = Color.Transparent,
+            shape = RoundedCornerShape(16.dp),
+            onClick = {
+                /* TODO: FITUR ITEM HISTORY */
+            }
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(vertical = 10.dp, horizontal = 8.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.CallSplit,
+                    contentDescription = "Manual Input Bill",
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(50))
+                        .padding(8.dp)
+                        .size(20.dp)
+                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(35))
+                        .padding(4.dp),
+                    tint = Color.White
+                )
+
+                // spacer
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Text Container
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                ) {
+                    Text(
+                        text = "Wizzmie",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                // price
+                Text(
+                    text = "Rp84.000",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.DarkGray,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+
+        // lihat selengkapnya
+        Surface(
+
+        ) {
+            Row(
+
+            ) {
+
             }
         }
     }
