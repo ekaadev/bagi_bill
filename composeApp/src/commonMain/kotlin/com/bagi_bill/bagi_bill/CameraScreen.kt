@@ -51,7 +51,7 @@ fun CameraScreen(
         CameraUI(
             onBack = onExit,
             onPhotoCaptured = { bytes, fromGallery ->
-                println("📸 Photo captured! Size: ${bytes.size} bytes, From Gallery: $fromGallery")
+                println("Photo captured! Size: ${bytes.size} bytes, From Gallery: $fromGallery")
                 capturedPhoto = bytes
                 isFromGallery = fromGallery
             }
@@ -108,7 +108,7 @@ private fun CameraUI(
             // Set permission status - callback ini akan dipanggil ketika permission berubah
             onPermissionGranted = { granted -> 
                 isCameraPermissionGranted = granted
-                println("🔑 Camera permission granted: $granted")
+                println("Camera permission granted: $granted")
             },
 
             // === UPDATE BAGIAN INI (TAMPILAN IZIN) ===
