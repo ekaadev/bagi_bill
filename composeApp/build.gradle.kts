@@ -44,6 +44,18 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+
+            // CAMERAX
+            implementation(libs.androidx.camera.core)
+            implementation(libs.androidx.camera.camera2)
+            implementation(libs.androidx.camera.lifecycle)
+            implementation(libs.androidx.camera.view)
+            implementation(libs.androidx.camera.extensions)
+
+            // HELPERS (Izin & UI Compose)
+            implementation(libs.accompanist.permissions) // Izin
+            implementation(libs.concurrent.futures)
+            implementation(libs.androidx.camera.compose)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -54,7 +66,8 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
+
+            // UI ICON
             implementation(compose.materialIconsExtended)
         }
         commonTest.dependencies {

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,31 +40,27 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowRightAlt
 import androidx.compose.material.icons.filled.CallSplit
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.AlignmentLine
-import androidx.compose.ui.modifier.ModifierLocalReadScope
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 
@@ -79,141 +74,156 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen() {
 
-    // Scroll behavior untuk animasi top bar (opsional, tapi bagus buat UX)
+    // 1. STATE: Pengatur navigasi antara Home dan Camera
+    var showCamera by remember { mutableStateOf(false) }
+
+    // State lain
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    // Snackbar host state
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Scaffold, sebagaia kanvas dasar layout pada material design.
-    // Fungsi ini otomatis mengatur ruang untuk UI bawaan dari OS (misalnya status bar, navigation bar)
-    Scaffold(
-        // snackbarHost untuk menampilkan snackbar
-        snackbarHost = { SnackbarHost( hostState = snackbarHostState)},
-        // modifier untuk mengatur tampilan dan behavior dari layout
-        modifier = Modifier
-            .fillMaxSize() // mengisi seluruh ruang yang tersedia
-            .nestedScroll(scrollBehavior.nestedScrollConnection), // Hubungkan scroll konten ke TopBar
-        topBar = {
-            TopAppBar(
-                modifier = Modifier
-                    .padding(horizontal = 8.dp),
-                // Background TopBar
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background, // Sesuaikan warna background
-                    scrolledContainerColor = MaterialTheme.colorScheme.background
-                ),
+    // 2. LOGIKA PERPINDAHAN HALAMAN
+    if (showCamera) {
+        // === MODE KAMERA ===
+        // Memanggil fitur kamera yang sudah kita buat sebelumnya
+        CameraScreen(
+            onExit = { showCamera = false }, // Balik ke Home
+            onPhotoConfirmed = { bytes ->
+                // TODO: Lakukan sesuatu dengan hasil foto di sini (misal: simpan ke DB)
+                println("Hasil foto diterima di Home: ${bytes.size} bytes")
 
-                // Icon Profil (kiri)
-                navigationIcon = {
-                    IconButton(onClick = {
-                        /* TODO: Aksi Profil */
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Fungsi Profile belum tersedia")
-                        }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Profil",
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(color = Color.White, shape = RoundedCornerShape(100))
-                                .padding(1.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-
-                // Status Bar (tengah)
-                // Row di dalam Row untuk menampung elemen-elemen di tengah
-                title = {
-                    // Row untuk menyusun elemen di dalamnya secara horizontal
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            // Trik agar container status ada di tengah-tengah sisa ruang
-                            .wrapContentWidth(Alignment.CenterHorizontally)
-                            .background(Color.White, shape = RoundedCornerShape(25))
-                            .padding(vertical = 6.dp, horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Shield,
-                            contentDescription = null,
-                            tint = Color(0xFFD4AF37),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Good | App Bagi Bill",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            lineHeight = 14.sp,
-                            color = Color.Black
-                        )
-                    }
-                },
-
-                // Icon Bantuan (kanan)
-                actions = {
-                    IconButton(onClick = {
-                        /* TODO: Aksi Bantuan */
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Fungsi Bantuan belum tersedia")
-                        }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Help,
-                            contentDescription = "Bantuan",
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(color = Color.White, shape = RoundedCornerShape(100))
-                                .padding(6.dp),
-                            tint = Color.Gray,
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    /* TODO: aksi fab */
-                    scope.launch {
-                        snackbarHostState.showSnackbar("Fungsi Scan QR Code belum tersedia")
-                    }
-                },
-                contentColor = Color.White,
-                containerColor = MaterialTheme.colorScheme.primary,
-                shape = RoundedCornerShape(50),
-                modifier = Modifier
-                    .padding(vertical = 12.dp) // padding, agar tidak terlalu bawah
-                    .width(80.dp)
-                    .height(46.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.QrCodeScanner,
-                    contentDescription = "Scan QR Code"
-                )
+                // Tutup kamera setelah foto didapat
+                showCamera = false
             }
-        },
-        floatingActionButtonPosition = FabPosition.Center,
-    ) { innerPadding ->
-        Column(
+        )
+    } else {
+        // Scaffold, sebagaia kanvas dasar layout pada material design.
+        // Fungsi ini otomatis mengatur ruang untuk UI bawaan dari OS (misalnya status bar, navigation bar)
+        Scaffold(
+            // snackbarHost untuk menampilkan snackbar
+            snackbarHost = { SnackbarHost( hostState = snackbarHostState)},
+            // modifier untuk mengatur tampilan dan behavior dari layout
             modifier = Modifier
-                .padding(innerPadding) // Padding otomatis dari Scaffold agar tidak ketutup TopBar
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-        ) {
-            // Create Group Section
-            HomeCreateGroupScreen()
+                .fillMaxSize() // mengisi seluruh ruang yang tersedia
+                .nestedScroll(scrollBehavior.nestedScrollConnection), // Hubungkan scroll konten ke TopBar
+            topBar = {
+                TopAppBar(
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp),
+                    // Background TopBar
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background, // Sesuaikan warna background
+                        scrolledContainerColor = MaterialTheme.colorScheme.background
+                    ),
 
-            // Manual Input Bill Section
-            HomeManualInputBillScreen()
+                    // Icon Profil (kiri)
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            /* TODO: Aksi Profil */
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Fungsi Profile belum tersedia")
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Profil",
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(color = Color.White, shape = RoundedCornerShape(100))
+                                    .padding(1.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
 
-            // History Section
-            HomeHistoryScreen()
+                    // Status Bar (tengah)
+                    // Row di dalam Row untuk menampung elemen-elemen di tengah
+                    title = {
+                        // Row untuk menyusun elemen di dalamnya secara horizontal
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                // Trik agar container status ada di tengah-tengah sisa ruang
+                                .wrapContentWidth(Alignment.CenterHorizontally)
+                                .background(Color.White, shape = RoundedCornerShape(25))
+                                .padding(vertical = 6.dp, horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = null,
+                                tint = Color(0xFFD4AF37),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Good | App Bagi Bill",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                lineHeight = 14.sp,
+                                color = Color.Black
+                            )
+                        }
+                    },
+
+                    // Icon Bantuan (kanan)
+                    actions = {
+                        IconButton(onClick = {
+                            /* TODO: Aksi Bantuan */
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Fungsi Bantuan belum tersedia")
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Help,
+                                contentDescription = "Bantuan",
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(color = Color.White, shape = RoundedCornerShape(100))
+                                    .padding(6.dp),
+                                tint = Color.Gray,
+                            )
+                        }
+                    },
+                    scrollBehavior = scrollBehavior
+                )
+            },
+
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        /* TODO: aksi fab */
+                        scope.launch { showCamera = true }
+                    },
+                    contentColor = Color.White,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier
+                        .padding(vertical = 12.dp) // padding, agar tidak terlalu bawah
+                        .width(80.dp)
+                        .height(46.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCodeScanner,
+                        contentDescription = "Scan QR Code"
+                    )
+                }
+
+            },
+            floatingActionButtonPosition = FabPosition.Center,
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding) // Padding otomatis dari Scaffold agar tidak ketutup TopBar
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Create Group Section
+                HomeCreateGroupScreen()
+
+                // Manual Input Bill Section
+                HomeManualInputBillScreen()
+            }
         }
     }
 }
