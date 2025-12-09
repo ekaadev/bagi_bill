@@ -160,7 +160,6 @@ fun HomeScreen() {
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = {
-                        /* TODO: aksi fab */
                         scope.launch { showCamera = true }
                     },
                     contentColor = Color.White,
