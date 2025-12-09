@@ -245,7 +245,7 @@ fun HomeCreateGroupScreen() {
      */
     Card(
         modifier = Modifier
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
@@ -359,7 +359,7 @@ fun HomeCreateGroupScreen() {
 fun HomeManualInputBillScreen() {
     Card(
         modifier = Modifier
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
@@ -452,9 +452,9 @@ fun HomeManualInputBillScreen() {
                     Spacer(modifier = Modifier.width(4.dp))
 
                     Icon(
-                        imageVector = Icons.Default.ArrowForward,
+                        imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Manual Input Bill",
-                        tint = Color.Black,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -465,7 +465,43 @@ fun HomeManualInputBillScreen() {
 
 @Composable
 fun HomeHistoryScreen() {
+    Card(
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        // Container dalam Card (paling awal)
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            // Title card
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Yang terakhir kamu buat",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
 
+            // Spacer
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Section content card
+            ListHistorySplitBill()
+        }
+    }
 }
 
 @Composable
@@ -525,6 +561,105 @@ fun ContactAvatarStack(
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun ListHistorySplitBill() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.Center
+    ) {
+        // item history split bill
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(),
+            color = Color.Transparent,
+            shape = RoundedCornerShape(16.dp),
+            onClick = {
+                /* TODO: FITUR ITEM HISTORY */
+            }
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(vertical = 10.dp, horizontal = 8.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.CallSplit,
+                    contentDescription = "Manual Input Bill",
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(50))
+                        .padding(8.dp)
+                        .size(20.dp)
+                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(35))
+                        .padding(4.dp),
+                    tint = Color.White
+                )
+
+                // spacer
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Text Container
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                ) {
+                    Text(
+                        text = "Wizzmie",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                // price
+                Text(
+                    text = "Rp84.000",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.DarkGray,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+
+        // lihat selengkapnya
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(),
+            color = Color.Transparent,
+            shape = RoundedCornerShape(50.dp),
+            border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+            onClick = {
+                /* TODO: FITUR Lihat Selengkapnya */
+            }
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(vertical = 10.dp, horizontal = 16.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Lihat selengkapnya",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = "Lihat selengkapnya",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }

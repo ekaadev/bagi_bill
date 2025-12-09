@@ -77,6 +77,9 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
         }
+        webMain.dependencies {
+            implementation(npm("@js-joda/timezone", "2.22.0"))
+        }
     }
 }
 
