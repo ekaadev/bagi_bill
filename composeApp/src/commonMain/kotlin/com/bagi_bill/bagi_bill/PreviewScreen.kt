@@ -16,13 +16,62 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * ============================================================================
+ * [LANGKAH 4] PREVIEW SCREEN - Konfirmasi Foto
+ * ============================================================================
+ *
+ * Halaman ini ditampilkan setelah user mengambil foto atau memilih dari galeri.
+ * User bisa melihat preview foto dan memutuskan untuk:
+ * 1. Foto ulang (kembali ke CameraUI)
+ * 2. Pakai foto ini (konfirmasi dan kirim ke HomeScreen)
+ *
+ * PARAMETER:
+ * - photoBytes: ByteArray yang berisi data gambar (hasil capture atau galeri)
+ * - isFromGallery: Boolean penanda apakah foto dari galeri atau kamera
+ *   → Jika dari galeri, tombol "Foto ulang" tidak ditampilkan
+ * - onRetake: Callback saat user ingin foto ulang
+ * - onConfirm: Callback saat user konfirmasi foto
+ *
+ * ALUR:
+ *
+ * [CameraScreen]
+ *     │ capturedPhoto != null
+ *     ▼
+ * [PreviewScreen ditampilkan dengan photoBytes]
+ *     │
+ *     ├── User tekan "Foto ulang"
+ *     │       │ onRetake()
+ *     │       ▼
+ *     │   [CameraScreen reset capturedPhoto = null]
+ *     │       │
+ *     │       ▼
+ *     │   [CameraUI ditampilkan lagi]
+ *     │
+ *     └── User tekan "Pakai foto ini"
+ *             │ onConfirm()
+ *             ▼
+ *         [CameraScreen panggil onPhotoConfirmed(capturedPhoto)]
+ *             │
+ *             ▼
+ *         [HomeScreen menerima ByteArray di callback onPhotoConfirmed]
+ *
+ * KONVERSI BYTEARRAY KE IMAGEBITMAP:
+ * → rememberBitmapFromBytes(photoBytes) mengkonversi ByteArray ke ImageBitmap
+ * → ImageBitmap bisa ditampilkan menggunakan Image() composable
+ * → Lihat implementasi rememberBitmapFromBytes di file terpisah
+ *
+ * ============================================================================
+ */
 @Composable
 fun PreviewScreen(
-    photoBytes: ByteArray,
-    isFromGallery: Boolean, // <--- PARAMETER BARU
-    onRetake: () -> Unit,
-    onConfirm: () -> Unit
+    photoBytes: ByteArray,    // Data gambar dalam bentuk ByteArray
+    isFromGallery: Boolean,   // true = dari galeri, false = dari kamera
+    onRetake: () -> Unit,     // Callback untuk foto ulang
+    onConfirm: () -> Unit     // Callback untuk konfirmasi foto
 ) {
+    // Konversi ByteArray ke ImageBitmap untuk ditampilkan
+    // rememberBitmapFromBytes adalah helper function untuk konversi
     val imageBitmap = rememberBitmapFromBytes(photoBytes)
 
     Box(
@@ -62,7 +111,7 @@ fun PreviewScreen(
             )
         }
 
-        // Tombol Aksi (Bawah)
+        // ========== TOMBOL AKSI (BAWAH) ==========
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -71,10 +120,12 @@ fun PreviewScreen(
                 .navigationBarsPadding(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // LOGIKA: Jika BUKAN dari galeri (alias dari kamera), tampilkan tombol "Foto Ulang"
+            // ========== TOMBOL FOTO ULANG ==========
+            // Hanya muncul jika foto diambil dari kamera (bukan galeri)
+            // Karena jika dari galeri, tidak masuk akal untuk "foto ulang"
             if (!isFromGallery) {
                 Button(
-                    onClick = onRetake,
+                    onClick = onRetake,  // Kembali ke CameraUI
                     modifier = Modifier
                         .weight(1f)
                         .height(50.dp),
@@ -91,9 +142,12 @@ fun PreviewScreen(
                 }
             }
 
-            // Tombol Pakai Foto (Selalu Ada)
-            // Kalau dari galeri, dia akan otomatis melebar memenuhi baris (karena weight 1f)
-            // yang membuatnya terlihat rapi di tengah.
+            // ========== TOMBOL PAKAI FOTO INI ==========
+            // Tombol konfirmasi - saat ditekan:
+            // 1. onConfirm() dipanggil
+            // 2. CameraScreen memanggil onPhotoConfirmed(capturedPhoto)
+            // 3. HomeScreen menerima ByteArray di callback onPhotoConfirmed
+            // 4. onExit() dipanggil untuk kembali ke HomeScreen
             Button(
                 onClick = onConfirm,
                 modifier = Modifier

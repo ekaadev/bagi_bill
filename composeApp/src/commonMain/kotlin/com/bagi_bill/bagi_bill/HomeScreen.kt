@@ -50,17 +50,46 @@ fun HomeScreen() {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // 2. LOGIKA PERPINDAHAN HALAMAN
+    /**
+     * ============================================================================
+     * [LANGKAH 1] TITIK AWAL ALUR KAMERA - HomeScreen.kt
+     * ============================================================================
+     *
+     * Ketika user menekan tombol FAB (FloatingActionButton) di bawah layar:
+     * → State `showCamera` berubah dari false ke true
+     * → Kondisi if(showCamera) terpenuhi
+     * → CameraScreen() dipanggil dan ditampilkan
+     *
+     * CameraScreen memiliki 2 callback:
+     * 1. onExit → dipanggil saat user ingin kembali (tekan tombol back)
+     * 2. onPhotoConfirmed → dipanggil saat user selesai mengambil & mengkonfirmasi foto
+     *    Parameter `bytes` adalah ByteArray yang berisi data gambar (JPEG/PNG)
+     *
+     * LANJUT KE: CameraScreen.kt untuk melihat alur selanjutnya →
+     * ============================================================================
+     */
     if (showCamera) {
         // === MODE KAMERA ===
-        // Memanggil fitur kamera yang sudah kita buat sebelumnya
+        // Memanggil CameraScreen (lihat file: CameraScreen.kt)
         CameraScreen(
-            onExit = { showCamera = false }, // Balik ke Home
-            onPhotoConfirmed = { bytes ->
-                // TODO: Lakukan sesuatu dengan hasil foto di sini (misal: simpan ke DB)
-                println("Hasil foto diterima di Home: ${bytes.size} bytes")
+            // Callback: dipanggil saat user tekan tombol back di kamera
+            onExit = { showCamera = false },
 
-                // Tutup kamera setelah foto didapat
+            // Callback: dipanggil saat user mengkonfirmasi foto yang diambil
+            // `bytes` adalah hasil akhir berupa ByteArray (data gambar mentah)
+            onPhotoConfirmed = { bytes ->
+                // ============================================================
+                // [LANGKAH TERAKHIR] HASIL GAMBAR DITERIMA DI SINI
+                // ============================================================
+                // `bytes` adalah ByteArray yang berisi data gambar
+                // Bisa digunakan untuk:
+                // - Upload ke server
+                // - Simpan ke database lokal
+                // - Proses OCR untuk membaca struk
+                // - Konversi ke ImageBitmap untuk ditampilkan
+                // ============================================================
+
+                println("Hasil foto diterima di Home: ${bytes.size} bytes")
                 showCamera = false
             }
         )

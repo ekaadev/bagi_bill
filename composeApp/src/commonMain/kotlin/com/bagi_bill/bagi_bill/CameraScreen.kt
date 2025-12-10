@@ -32,77 +32,168 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.layout.AlignmentLine
 
 /**
- * CameraScreen - Router untuk Camera Flow
- * 
- * Flow: Camera → Preview → Confirm
- * Mengatur routing antara CameraUI dan PreviewScreen
+ * ============================================================================
+ * [LANGKAH 2] CAMERA ROUTER - CameraScreen.kt
+ * ============================================================================
+ *
+ * File ini berfungsi sebagai ROUTER untuk alur kamera.
+ * Terdiri dari 2 state utama:
+ *
+ * 1. capturedPhoto == null → Tampilkan CameraUI (halaman pengambilan foto)
+ * 2. capturedPhoto != null → Tampilkan PreviewScreen (halaman preview foto)
+ *
+ * ALUR:
+ * → User masuk ke CameraScreen
+ * → CameraUI ditampilkan (karena capturedPhoto masih null)
+ * → User ambil foto atau pilih dari galeri
+ * → onPhotoCaptured dipanggil dengan ByteArray hasil foto
+ * → capturedPhoto diisi dengan ByteArray tersebut
+ * → PreviewScreen ditampilkan (karena capturedPhoto tidak null lagi)
+ * → User konfirmasi foto → onPhotoConfirmed dipanggil ke HomeScreen
+ *
+ * LANJUT KE:
+ * - CameraUI (di bawah) untuk melihat proses pengambilan foto
+ * - PreviewScreen.kt untuk melihat halaman preview
+ * ============================================================================
  */
 @Composable
 fun CameraScreen(
     onExit: () -> Unit,
     onPhotoConfirmed: (ByteArray) -> Unit = {}
 ) {
+    // State untuk menyimpan foto yang sudah diambil (ByteArray)
+    // null = belum ada foto, ada nilai = sudah ada foto
     var capturedPhoto by remember { mutableStateOf<ByteArray?>(null) }
+
+    // State untuk menandai apakah foto berasal dari galeri atau kamera
     var isFromGallery by remember { mutableStateOf(false) }
 
-    // Router
+    // ========== ROUTING LOGIC ==========
+    // Jika belum ada foto → tampilkan CameraUI
+    // Jika sudah ada foto → tampilkan PreviewScreen
     if (capturedPhoto == null) {
-        // Halaman Camera
+        // [CABANG A] Halaman Camera - user belum ambil foto
         CameraUI(
             onBack = onExit,
+            // Callback saat foto berhasil diambil
+            // bytes = data gambar, fromGallery = true jika dari galeri
             onPhotoCaptured = { bytes, fromGallery ->
                 println("Photo captured! Size: ${bytes.size} bytes, From Gallery: $fromGallery")
+                // Simpan foto ke state → trigger recomposition → PreviewScreen ditampilkan
                 capturedPhoto = bytes
                 isFromGallery = fromGallery
             }
         )
     } else {
-        // Halaman Preview
+        // [CABANG B] Halaman Preview - user sudah ambil foto
+        // Lihat file: PreviewScreen.kt
         PreviewScreen(
             photoBytes = capturedPhoto!!,
             isFromGallery = isFromGallery,
-            onRetake = { 
-                capturedPhoto = null
+            // Callback saat user ingin foto ulang
+            onRetake = {
+                capturedPhoto = null  // Reset state → kembali ke CameraUI
                 isFromGallery = false
             },
+            // Callback saat user konfirmasi foto
             onConfirm = {
+                // Kirim ByteArray foto ke HomeScreen melalui callback
                 onPhotoConfirmed(capturedPhoto!!)
-                onExit()
+                onExit()  // Kembali ke HomeScreen
             }
         )
     }
 }
 
 /**
- * CameraUI - UI untuk mengambil foto dari kamera atau gallery
+ * ============================================================================
+ * [LANGKAH 3] CAMERA UI - Tampilan Pengambilan Foto
+ * ============================================================================
+ *
+ * Fungsi ini menampilkan UI untuk mengambil foto, terdiri dari:
+ *
+ * KOMPONEN UTAMA:
+ * 1. CameraPreview → Menampilkan preview kamera (expect/actual per platform)
+ *    - Android: Menggunakan CameraX
+ *    - iOS: Menggunakan AVFoundation
+ *    Lihat file: CameraPreview.kt (commonMain) dan CameraPreview.android.kt (androidMain)
+ *
+ * 2. CameraController → Mengontrol kamera (capture foto, toggle flash)
+ *    Lihat file: CameraController.kt
+ *
+ * 3. GalleryImagePicker → Mengambil gambar dari galeri (expect/actual per platform)
+ *
+ * ALUR PENGAMBILAN FOTO:
+ *
+ * [CARA 1 - DARI KAMERA]
+ * → User tekan tombol capture (lingkaran putih di bawah)
+ * → controller.capture() dipanggil
+ * → CameraController mengirim sinyal ke implementasi platform
+ * → Platform mengambil foto dan konversi ke ByteArray
+ * → onPhotoCaptured(bytes, false) dipanggil (false = bukan dari galeri)
+ * → CameraScreen menerima ByteArray dan pindah ke PreviewScreen
+ *
+ * [CARA 2 - DARI GALERI]
+ * → User tekan tombol galeri (icon gambar di kiri bawah)
+ * → showGalleryPicker = true
+ * → GalleryImagePicker ditampilkan
+ * → User pilih gambar
+ * → Gambar dikonversi ke ByteArray
+ * → onPhotoCaptured(bytes, true) dipanggil (true = dari galeri)
+ * → CameraScreen menerima ByteArray dan pindah ke PreviewScreen
+ *
+ * ============================================================================
  */
 @Composable
 private fun CameraUI(
     onBack: () -> Unit,
     onPhotoCaptured: (ByteArray, Boolean) -> Unit // Boolean = isFromGallery
 ) {
+    // Controller untuk mengontrol kamera (capture, flash)
+    // Lihat file: CameraController.kt
     val controller = remember { CameraController() }
+
+    // State untuk toggle flash
     var isFlashOn by remember { mutableStateOf(false) }
+
+    // State untuk menampilkan gallery picker
     var showGalleryPicker by remember { mutableStateOf(false) }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    // State untuk mengecek apakah izin kamera sudah diberikan
     var isCameraPermissionGranted by remember { mutableStateOf(false) }
 
+    // ========== GALLERY PICKER ==========
+    // Jika showGalleryPicker = true, tampilkan picker galeri
     if (showGalleryPicker) {
+        // GalleryImagePicker adalah expect/actual function
+        // Implementasi berbeda per platform (Android, iOS, dll)
         GalleryImagePicker { bytes ->
-            if (bytes != null) onPhotoCaptured(bytes, true) // true = dari gallery
+            if (bytes != null) {
+                // Gambar berhasil dipilih, kirim ke callback
+                // true = menandakan gambar ini dari galeri
+                onPhotoCaptured(bytes, true)
+            }
             showGalleryPicker = false
         }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
 
-        // 1. LAYER KAMERA & PERMISSION
+        // ========== 1. LAYER KAMERA & PERMISSION ==========
+        // CameraPreview adalah expect/actual function
+        // Lihat: CameraPreview.kt (deklarasi) dan CameraPreview.android.kt (implementasi Android)
         CameraPreview(
             modifier = Modifier.fillMaxSize(),
             controller = controller,
+            // Callback saat foto berhasil diambil dari kamera
             onPhotoCaptured = { bytes ->
-                if (bytes != null) onPhotoCaptured(bytes, false) // false = dari camera
+                if (bytes != null) {
+                    // false = menandakan gambar ini dari kamera, bukan galeri
+                    onPhotoCaptured(bytes, false)
+                }
             },
 
             // Set permission status - callback ini akan dipanggil ketika permission berubah
@@ -211,11 +302,13 @@ private fun CameraUI(
             )
         }
 
-        // 5. TOMBOL FLASH
+        // ========== 5. TOMBOL FLASH ==========
+        // Toggle flash on/off melalui CameraController
         IconButton(
             onClick = {
                 if (isCameraPermissionGranted) {
                     isFlashOn = !isFlashOn
+                    // Kirim sinyal ke platform untuk toggle flash
                     controller.switchFlash()
                 }
             },
@@ -230,7 +323,8 @@ private fun CameraUI(
             )
         }
 
-        // 6. TOMBOL GALLERY
+        // ========== 6. TOMBOL GALLERY ==========
+        // Buka picker galeri untuk memilih gambar yang sudah ada
         IconButton(
             onClick = { showGalleryPicker = true },
             modifier = Modifier.align(Alignment.BottomStart).padding(64.dp)
@@ -242,8 +336,10 @@ private fun CameraUI(
                 modifier = Modifier.size(32.dp)
             )
         }
-
-        // 7. TOMBOL CAPTURE
+        // ========== 7. TOMBOL CAPTURE (SHUTTER) ==========
+        // Tombol utama untuk mengambil foto
+        // Saat ditekan → controller.capture() → platform mengambil foto
+        // → foto dikonversi ke ByteArray → onPhotoCaptured dipanggil
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -255,6 +351,9 @@ private fun CameraUI(
                 .background(if (isCameraPermissionGranted) Color.White else Color.Gray)
                 .clickable(enabled = isCameraPermissionGranted) { 
                     if (isCameraPermissionGranted) {
+                        // Trigger capture foto melalui CameraController
+                        // Controller akan mengirim sinyal ke implementasi platform
+                        // Lihat: CameraController.kt
                         controller.capture()
                     }
                 }
