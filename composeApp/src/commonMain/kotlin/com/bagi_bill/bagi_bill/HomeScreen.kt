@@ -50,6 +50,7 @@ fun HomeScreen() {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    val textService = TextRecognitionService()
     /**
      * ============================================================================
      * [LANGKAH 1] TITIK AWAL ALUR KAMERA - HomeScreen.kt
@@ -90,6 +91,18 @@ fun HomeScreen() {
                 // ============================================================
 
                 println("Hasil foto diterima di Home: ${bytes.size} bytes")
+
+                scope.launch {
+                    try {
+                        val extractedText = textService.recognizeText(bytes)
+                        val result = parserUtil(extractedText)
+
+                        // TODO: Use result to update UI state
+                    } catch (e: Exception) {
+                        println("OCR Error: ${e.message}")
+                        e.printStackTrace()
+                    }
+                }
                 showCamera = false
             }
         )
@@ -663,3 +676,4 @@ fun ListHistorySplitBill() {
         }
     }
 }
+
