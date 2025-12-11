@@ -41,6 +41,7 @@ kotlin {
     }
 
     sourceSets {
+
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
@@ -56,6 +57,10 @@ kotlin {
             implementation(libs.accompanist.permissions) // Izin
             implementation(libs.concurrent.futures)
             implementation(libs.androidx.camera.compose)
+
+            // OCR ML KIT
+            // To recognize Latin script
+            implementation("com.google.mlkit:text-recognition:16.0.1")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
