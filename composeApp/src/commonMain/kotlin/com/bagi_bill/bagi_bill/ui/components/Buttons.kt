@@ -1,5 +1,6 @@
 package com.bagi_bill.bagi_bill.ui.components
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -8,25 +9,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 
-//Komponen Navigasi
+//Komponen Top Bar Button Bulat
 @Composable
-fun TranslucentIconButton(
+fun WhiteCircleIconButton(
     icon: ImageVector,
     onClick: () -> Unit,
     contentDescription: String,
+    iconTint: Color = Color.Black,
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier,
-        shape = CircleShape,
-        color = Color.Black.copy(alpha = 0.4f)
+        modifier = modifier.size(40.dp),
+        shape = CircleShape, // Bulat sempurna
+        color = Color.White, // Background Putih
+        shadowElevation = 2.dp // (Opsional) Kasih bayangan dikit biar pop-up
     ) {
-        IconButton(onClick = onClick) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier.size(40.dp)
+
+        ) {
+
             Icon(
                 imageVector = icon,
                 contentDescription = contentDescription,
-                tint = Color.White
+                tint = iconTint, // Warna Icon (Ungu)
+                modifier = Modifier.size(24.dp)
             )
         }
     }
