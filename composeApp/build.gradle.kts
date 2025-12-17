@@ -41,9 +41,26 @@ kotlin {
     }
 
     sourceSets {
+
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+
+            // CAMERAX
+            implementation(libs.androidx.camera.core)
+            implementation(libs.androidx.camera.camera2)
+            implementation(libs.androidx.camera.lifecycle)
+            implementation(libs.androidx.camera.view)
+            implementation(libs.androidx.camera.extensions)
+
+            // HELPERS (Izin & UI Compose)
+            implementation(libs.accompanist.permissions)
+            implementation(libs.concurrent.futures)
+            implementation(libs.androidx.camera.compose)
+
+            // OCR ML KIT
+            // To recognize Latin script
+            implementation("com.google.mlkit:text-recognition:16.0.1")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -62,6 +79,9 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+        }
+        webMain.dependencies {
+            implementation(npm("@js-joda/timezone", "2.22.0"))
         }
     }
 }
