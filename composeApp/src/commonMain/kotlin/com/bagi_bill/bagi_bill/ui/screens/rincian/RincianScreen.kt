@@ -16,15 +16,13 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -35,28 +33,49 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import bagi_bill.composeapp.generated.resources.Res
 import bagi_bill.composeapp.generated.resources.header_rincian
+import com.bagi_bill.bagi_bill.ParsedReceipt
 import com.bagi_bill.bagi_bill.ui.components.BillItem
 import com.bagi_bill.bagi_bill.ui.components.BillItemRow
 import com.bagi_bill.bagi_bill.ui.components.BillSummaryRow
 import com.bagi_bill.bagi_bill.ui.components.WhiteCircleIconButton
+import com.bagi_bill.bagi_bill.utils.decodeByteArrayToImageBitmap
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
 @Composable
-fun RincianScreen(modifier: Modifier = Modifier) {
+fun RincianScreen(
+    parsedReceipt: ParsedReceipt,
+    imageBytes: ByteArray? = null,
+    onBack: () -> Unit,
+    onRetakePhoto: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    // State untuk nama split bill
+    var splitBillName by remember { mutableStateOf(parsedReceipt.name) }
 
-    // Data Dummy Sementara
-    val dummyItems = remember{
-        listOf(
-            BillItem("Spons Make Up", 1, 14500),
-            BillItem("Kacamata Gaya", 1, 13500),
-            BillItem("Anting Anting", 1, 8000),
-            BillItem("Ikat Rambut", 10, 4000),
-            BillItem("Alat Pencabut Alis", 1, 10000),
-            BillItem("Anting Anting Anting", 2, 8000),
-        )
+    // Konversi data dari ParsedReceipt ke BillItem untuk ditampilkan
+    val billItems = remember(parsedReceipt) {
+        parsedReceipt.items.map { receiptItem ->
+            BillItem(
+                name = receiptItem.name,
+                qty = receiptItem.qty,
+                price = receiptItem.price
+            )
+        }
+    }
+
+    // Konversi ByteArray ke ImageBitmap untuk ditampilkan
+    val capturedImage: ImageBitmap? = remember(imageBytes) {
+        imageBytes?.let {
+            try {
+                // Menggunakan platform-specific decoder
+                decodeByteArrayToImageBitmap(it)
+            } catch (e: Exception) {
+                println("Error decoding image: ${e.message}")
+                null
+            }
+        }
     }
 
 
@@ -102,7 +121,7 @@ fun RincianScreen(modifier: Modifier = Modifier) {
                                 containerColor = Color.White // Putih Solid
                             ),
                             navigationIcon = {
-                                IconButton(onClick = {}) {
+                                IconButton(onClick = onBack) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                         contentDescription = "Back",
@@ -143,7 +162,7 @@ fun RincianScreen(modifier: Modifier = Modifier) {
                             navigationIcon = {
                                 WhiteCircleIconButton(
                                     icon = Icons.AutoMirrored.Filled.ArrowBack,
-                                    onClick = {},
+                                    onClick = onBack,
                                     contentDescription = "Back",
                                     modifier = Modifier.padding(start = 16.dp),
                                     iconTint = Color.Black
@@ -236,8 +255,8 @@ fun RincianScreen(modifier: Modifier = Modifier) {
                                 color = Color.Gray,
                             )
                             TextField(
-                                value = "",
-                                onValueChange = {},
+                                value = splitBillName,
+                                onValueChange = { splitBillName = it },
                                 textStyle = TextStyle(
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
@@ -328,20 +347,32 @@ fun RincianScreen(modifier: Modifier = Modifier) {
                             ) {
 
                                 // Hasil Scan
-                                Image(
-                                   // Gambar Sementara
-                                    painter = painterResource(Res.drawable.header_rincian),
-                                    contentDescription = "Foto Struk",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(80.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(Color.LightGray)
-                                )
+                                if (capturedImage != null) {
+                                    Image(
+                                        bitmap = capturedImage,
+                                        contentDescription = "Foto Struk",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(80.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(Color.LightGray)
+                                    )
+                                } else {
+                                    Image(
+                                        // Gambar Placeholder
+                                        painter = painterResource(Res.drawable.header_rincian),
+                                        contentDescription = "Foto Struk",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(80.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(Color.LightGray)
+                                    )
+                                }
 
                                // Button Foto Ulang
                                 OutlinedButton(
-                                    onClick = { /* Aksi Foto Ulang */ },
+                                    onClick = onRetakePhoto,
                                     shape = RoundedCornerShape(50),
                                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEEEEEE)),
                                     colors = ButtonDefaults.outlinedButtonColors(
@@ -378,8 +409,8 @@ fun RincianScreen(modifier: Modifier = Modifier) {
                         Column(
                             modifier = Modifier.padding(20.dp)
                         ) {
-                            // LIST BARANG (Looping)
-                            dummyItems.forEach { item ->
+                            // LIST BARANG (Dari hasil OCR)
+                            billItems.forEach { item ->
                                 BillItemRow(item = item)
                             }
 
@@ -393,17 +424,17 @@ fun RincianScreen(modifier: Modifier = Modifier) {
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // SUMMARY SECTION
-                            BillSummaryRow("Subtotal", "50.000")
-                            BillSummaryRow("Pajak", "0")
-                            BillSummaryRow("Servis", "0")
-                            BillSummaryRow("Diskon", "0")
-                            BillSummaryRow("Lainnya", "0")
+                            // SUMMARY SECTION (Dari hasil OCR)
+                            BillSummaryRow("Subtotal", formatPrice(parsedReceipt.summary.subtotal))
+                            BillSummaryRow("Pajak", formatPrice(parsedReceipt.summary.pajak))
+                            BillSummaryRow("Servis", "0") // Bisa ditambahkan ke ParsedReceipt jika perlu
+                            BillSummaryRow("Diskon", formatPrice(parsedReceipt.summary.diskon))
+                            BillSummaryRow("Lainnya", formatPrice(parsedReceipt.summary.lainnya))
 
                             Spacer(modifier = Modifier.height(8.dp))
 
                             // TOTAL (Bold)
-                            BillSummaryRow("Jumlah total", "50.000", isTotal = true)
+                            BillSummaryRow("Jumlah total", formatPrice(parsedReceipt.summary.total), isTotal = true)
 
                             Spacer(modifier = Modifier.height(24.dp))
 
@@ -434,6 +465,11 @@ fun RincianScreen(modifier: Modifier = Modifier) {
     }
 }
 
+// Fungsi helper untuk format harga
+private fun formatPrice(price: Int): String {
+    return price.toString().reversed().chunked(3).joinToString(".").reversed()
+}
+
 //Fungsi untuk Membuat Lengkungan pada Gambar Header
 @Composable
 fun bottomArcShape(curveMagnitude: Dp = 40.dp): Shape {
@@ -453,4 +489,32 @@ fun bottomArcShape(curveMagnitude: Dp = 40.dp): Shape {
             close()
         }
     }
+}
+
+// Preview untuk testing di IDE
+@Preview
+@Composable
+private fun RincianScreenPreview() {
+    val dummyReceipt = ParsedReceipt(
+        name = "Toko ABC",
+        items = listOf(
+            com.bagi_bill.bagi_bill.ReceiptItem(1, "Spons Make Up", 14500),
+            com.bagi_bill.bagi_bill.ReceiptItem(1, "Kacamata Gaya", 13500),
+            com.bagi_bill.bagi_bill.ReceiptItem(1, "Anting Anting", 8000),
+        ),
+        summary = com.bagi_bill.bagi_bill.ReceiptSummary(
+            subtotal = 36000,
+            pajak = 0,
+            diskon = 0,
+            lainnya = 0,
+            total = 36000
+        )
+    )
+
+    RincianScreen(
+        parsedReceipt = dummyReceipt,
+        imageBytes = null,
+        onBack = {},
+        onRetakePhoto = {}
+    )
 }
