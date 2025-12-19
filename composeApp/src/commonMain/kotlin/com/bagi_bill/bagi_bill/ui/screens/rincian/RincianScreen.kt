@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -49,10 +50,21 @@ fun RincianScreen(
     imageBytes: ByteArray? = null,
     onBack: () -> Unit,
     onRetakePhoto: () -> Unit = {},
+    onEditDetails: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // State untuk nama split bill
     var splitBillName by remember { mutableStateOf(parsedReceipt.name) }
+
+    // State untuk info tambahan
+    var additionalInfo by remember { mutableStateOf("") }
+
+    // State untuk drawer
+    val drawerState = rememberModalBottomSheetState()
+    var showDrawer by remember { mutableStateOf(false) }
+
+    // State sementara untuk input di drawer
+    var tempAdditionalInfo by remember { mutableStateOf(additionalInfo) }
 
     // Konversi data dari ParsedReceipt ke BillItem untuk ditampilkan
     val billItems = remember(parsedReceipt) {
@@ -279,7 +291,10 @@ fun RincianScreen(
                             )
                             Spacer(modifier = Modifier.height(32.dp))
                             Surface(
-                                onClick = { /* Todo: Buka dialog info */ },
+                                onClick = {
+                                    tempAdditionalInfo = additionalInfo
+                                    showDrawer = true
+                                },
                                 color = Color(0xFFF5F5F5),
                                 shape = RoundedCornerShape(50),
                                 modifier = Modifier.fillMaxWidth().height(32.dp),
@@ -298,9 +313,18 @@ fun RincianScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
 
                                     Text(
-                                        text = "Masukkin info tambahan di sini",
+                                        text = if (additionalInfo.isEmpty()) {
+                                            "Masukkin info tambahan di sini"
+                                        } else {
+                                            if (additionalInfo.length > 35) {
+                                                additionalInfo.take(35) + ".."
+                                            } else {
+                                                additionalInfo
+                                            }
+                                        },
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Gray
+                                        color = if (additionalInfo.isEmpty()) Color.Gray else Color.Black,
+                                        maxLines = 1
                                     )
                                 }
                             }
@@ -440,7 +464,7 @@ fun RincianScreen(
 
                             // TOMBOL UBAH RINCIAN
                             OutlinedButton(
-                                onClick = { /* Todo: Mode Edit */ },
+                                onClick = onEditDetails,
                                 modifier = Modifier.fillMaxWidth().height(45.dp),
                                 shape = RoundedCornerShape(50),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEEEEEE)),
@@ -458,6 +482,133 @@ fun RincianScreen(
                                 Text("Ubah rincian", fontWeight = FontWeight.SemiBold)
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        // Modal Bottom Sheet untuk Info Tambahan
+        if (showDrawer) {
+            ModalBottomSheet(
+                onDismissRequest = {
+                    showDrawer = false
+                    tempAdditionalInfo = additionalInfo // Reset ke nilai asli jika dibatalkan
+                },
+                sheetState = drawerState,
+                containerColor = Color.White,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 32.dp)
+                ) {
+                    // Header dengan tombol Close dan Hapus
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Tombol Close
+                        IconButton(onClick = {
+                            showDrawer = false
+                            tempAdditionalInfo = additionalInfo // Reset
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Tutup",
+                                tint = Color.Black
+                            )
+                        }
+
+                        // Judul
+                        Text(
+                            text = "Catatan",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+
+                        // Tombol Hapus
+                        TextButton(
+                            onClick = {
+                                tempAdditionalInfo = ""
+                            }
+                        ) {
+                            Text(
+                                text = "Hapus",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Field Input
+                    Text(
+                        text = "Masukkin info tambahan di sini",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = tempAdditionalInfo,
+                        onValueChange = { tempAdditionalInfo = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        placeholder = {
+                            Text(
+                                text = "",
+                                color = Color.Gray
+                            )
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = Color.LightGray
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        maxLines = 8
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Counter karakter
+                    Text(
+                        text = "${tempAdditionalInfo.length}/160",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Tombol Selesai
+                    Button(
+                        onClick = {
+                            additionalInfo = tempAdditionalInfo
+                            showDrawer = false
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Text(
+                            text = "Selesai",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
