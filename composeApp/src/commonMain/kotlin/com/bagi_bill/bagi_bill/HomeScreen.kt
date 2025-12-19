@@ -34,6 +34,7 @@ fun HomeScreen() {
     // 1. STATE: Pengatur navigasi antara Home dan Camera
     var showCamera by remember { mutableStateOf(false) }
     var showRincian by remember { mutableStateOf(false) }
+    var showUbahRincian by remember { mutableStateOf(false) }
 
     // State untuk menyimpan hasil OCR
     var ocrResult by remember { mutableStateOf<ParsedReceipt?>(null) }
@@ -135,6 +136,27 @@ fun HomeScreen() {
                 showRincian = false
                 showCamera = true
                 // Data OCR dan gambar lama akan diganti dengan yang baru setelah foto ulang
+            },
+            onEditDetails = {
+                // Navigasi ke halaman Ubah Rincian
+                showRincian = false
+                showUbahRincian = true
+            }
+        )
+    } else if (showUbahRincian && ocrResult != null) {
+        // === MODE UBAH RINCIAN ===
+        // Menampilkan halaman edit rincian
+        com.bagi_bill.bagi_bill.ui.screens.rincian.UbahRincianScreen(
+            parsedReceipt = ocrResult!!,
+            onBack = {
+                showUbahRincian = false
+                showRincian = true
+            },
+            onConfirm = { updatedReceipt ->
+                // Update hasil OCR dengan data yang sudah diedit
+                ocrResult = updatedReceipt
+                showUbahRincian = false
+                showRincian = true
             }
         )
     } else {
