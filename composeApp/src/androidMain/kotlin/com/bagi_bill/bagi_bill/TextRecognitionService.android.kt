@@ -13,7 +13,7 @@ import androidx.core.graphics.scale
 
 actual class TextRecognitionService actual constructor() {
     // Instance dari ML Kit Text Recognizer
-    private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private val recognizer by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
 
     companion object {
         private const val TAG = "TextRecognitionService"
