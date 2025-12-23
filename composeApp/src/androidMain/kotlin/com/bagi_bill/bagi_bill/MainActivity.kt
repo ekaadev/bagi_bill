@@ -1,4 +1,4 @@
-package com.bagi_bill.bagi_bill // <-- Pastikan ini tetap ada
+package com.bagi_bill.bagi_bill
 
 import android.Manifest
 import android.os.Bundle

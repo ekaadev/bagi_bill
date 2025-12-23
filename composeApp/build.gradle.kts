@@ -54,7 +54,7 @@ kotlin {
             implementation(libs.androidx.camera.extensions)
 
             // HELPERS (Izin & UI Compose)
-            implementation(libs.accompanist.permissions) // Izin
+            implementation(libs.accompanist.permissions)
             implementation(libs.concurrent.futures)
             implementation(libs.androidx.camera.compose)
 
@@ -71,8 +71,6 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-
-            // UI ICON
             implementation(compose.materialIconsExtended)
         }
         commonTest.dependencies {

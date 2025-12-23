@@ -1,19 +1,7 @@
 package com.bagi_bill.bagi_bill
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.bagi_bill.bagi_bill.ui.screens.rincian.RincianScreen
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -44,6 +33,12 @@ fun HomeScreen() {
 
     // 1. STATE: Pengatur navigasi antara Home dan Camera
     var showCamera by remember { mutableStateOf(false) }
+    var showRincian by remember { mutableStateOf(false) }
+    var showUbahRincian by remember { mutableStateOf(false) }
+
+    // State untuk menyimpan hasil OCR
+    var ocrResult by remember { mutableStateOf<ParsedReceipt?>(null) }
+    var capturedImageBytes by remember { mutableStateOf<ByteArray?>(null) }
 
     // State lain
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -92,18 +87,76 @@ fun HomeScreen() {
 
                 println("Hasil foto diterima di Home: ${bytes.size} bytes")
 
+                // Simpan gambar
+                capturedImageBytes = bytes
+
                 scope.launch {
                     try {
                         val extractedText = textService.recognizeText(bytes)
                         val result = parserUtil(extractedText)
 
-                        // TODO: Use result to update UI state
+                        // Simpan hasil OCR
+                        ocrResult = result
+
+                        // Tutup kamera dan tampilkan RincianScreen
+                        showCamera = false
+                        showRincian = true
+
+                        println("xyz: $result")
+
+                        println("OCR berhasil: ${result.items.size} items ditemukan")
                     } catch (e: Exception) {
                         println("OCR Error: ${e.message}")
                         e.printStackTrace()
+                        showCamera = false
+
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Gagal memproses gambar: ${e.message}",
+                                duration = SnackbarDuration.Long
+                            )
+                        }
                     }
                 }
-                showCamera = false
+            }
+        )
+    } else if (showRincian && ocrResult != null) {
+        // === MODE RINCIAN ===
+        // Menampilkan hasil OCR di RincianScreen
+        RincianScreen(
+            parsedReceipt = ocrResult!!,
+            imageBytes = capturedImageBytes,
+            onBack = {
+                showRincian = false
+                ocrResult = null
+                capturedImageBytes = null
+            },
+            onRetakePhoto = {
+                // Tutup rincian dan buka kamera untuk foto ulang
+                showRincian = false
+                showCamera = true
+                // Data OCR dan gambar lama akan diganti dengan yang baru setelah foto ulang
+            },
+            onEditDetails = {
+                // Navigasi ke halaman Ubah Rincian
+                showRincian = false
+                showUbahRincian = true
+            }
+        )
+    } else if (showUbahRincian && ocrResult != null) {
+        // === MODE UBAH RINCIAN ===
+        // Menampilkan halaman edit rincian
+        com.bagi_bill.bagi_bill.ui.screens.rincian.UbahRincianScreen(
+            parsedReceipt = ocrResult!!,
+            onBack = {
+                showUbahRincian = false
+                showRincian = true
+            },
+            onConfirm = { updatedReceipt ->
+                // Update hasil OCR dengan data yang sudah diedit
+                ocrResult = updatedReceipt
+                showUbahRincian = false
+                showRincian = true
             }
         )
     } else {
