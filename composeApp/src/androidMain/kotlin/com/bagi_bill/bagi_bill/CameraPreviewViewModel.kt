@@ -10,6 +10,7 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
+import androidx.camera.core.AspectRatio
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
@@ -119,16 +120,23 @@ class CameraPreviewViewModel : ViewModel() {
 
     // ========== USE CASE: PREVIEW ==========
     // Untuk menampilkan preview kamera di layar
-    private val previewUseCase = Preview.Builder().build().apply {
-        setSurfaceProvider { newSurfaceRequest ->
-            _surfaceRequest.update { newSurfaceRequest }
+    // PENTING: Atur target aspect ratio agar sesuai dengan ImageCapture
+    // Ini memastikan apa yang terlihat di preview sama dengan hasil foto
+    private val previewUseCase = Preview.Builder()
+        .setTargetAspectRatio(AspectRatio.RATIO_4_3)  // Gunakan 4:3 ratio
+        .build()
+        .apply {
+            setSurfaceProvider { newSurfaceRequest ->
+                _surfaceRequest.update { newSurfaceRequest }
+            }
         }
-    }
 
     // ========== USE CASE: IMAGE CAPTURE ==========
     // Untuk mengambil foto
     // CAPTURE_MODE_MINIMIZE_LATENCY = prioritaskan kecepatan, bukan kualitas
+    // PENTING: Atur target aspect ratio sama dengan Preview untuk konsistensi
     private val imageCaptureUseCase = ImageCapture.Builder()
+        .setTargetAspectRatio(AspectRatio.RATIO_4_3)  // Gunakan 4:3 ratio (sama dengan preview)
         .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
         .build()
 
