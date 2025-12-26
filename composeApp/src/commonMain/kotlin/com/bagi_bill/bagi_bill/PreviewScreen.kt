@@ -153,8 +153,7 @@ fun PreviewScreen(
                     ) {
                         Text(
                             text = "Pakai foto ini",
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
