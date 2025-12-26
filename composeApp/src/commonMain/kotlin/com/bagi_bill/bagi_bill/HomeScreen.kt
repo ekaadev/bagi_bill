@@ -1,70 +1,25 @@
 package com.bagi_bill.bagi_bill
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Help
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.jetbrains.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.CallSplit
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.ui.Modifier
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.zIndex
+import com.bagi_bill.bagi_bill.ui.screens.rincian.RincianScreen
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /**
  * OptIn annotation untuk menggunakan API eksperimental dari Material3.
@@ -78,20 +33,58 @@ fun HomeScreen() {
 
     // 1. STATE: Pengatur navigasi antara Home dan Camera
     var showCamera by remember { mutableStateOf(false) }
+    var showRincian by remember { mutableStateOf(false) }
+    var showUbahRincian by remember { mutableStateOf(false) }
+
+    // State untuk menyimpan hasil OCR
+    var ocrResult by remember { mutableStateOf<ParsedReceipt?>(null) }
+    var capturedImageBytes by remember { mutableStateOf<ByteArray?>(null) }
 
     // State lain
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // 2. LOGIKA PERPINDAHAN HALAMAN
+    val textService = TextRecognitionService()
+    /**
+     * ============================================================================
+     * [LANGKAH 1] TITIK AWAL ALUR KAMERA - HomeScreen.kt
+     * ============================================================================
+     *
+     * Ketika user menekan tombol FAB (FloatingActionButton) di bawah layar:
+     * → State `showCamera` berubah dari false ke true
+     * → Kondisi if(showCamera) terpenuhi
+     * → CameraScreen() dipanggil dan ditampilkan
+     *
+     * CameraScreen memiliki 2 callback:
+     * 1. onExit → dipanggil saat user ingin kembali (tekan tombol back)
+     * 2. onPhotoConfirmed → dipanggil saat user selesai mengambil & mengkonfirmasi foto
+     *    Parameter `bytes` adalah ByteArray yang berisi data gambar (JPEG/PNG)
+     *
+     * LANJUT KE: CameraScreen.kt untuk melihat alur selanjutnya →
+     * ============================================================================
+     */
     if (showCamera) {
         // === MODE KAMERA ===
-        // Memanggil fitur kamera yang sudah kita buat sebelumnya
+        // Memanggil CameraScreen (lihat file: CameraScreen.kt)
         CameraScreen(
-            onExit = { showCamera = false }, // Balik ke Home
+            // Callback: dipanggil saat user tekan tombol back di kamera
+            onExit = { showCamera = false },
+
+            // Callback: dipanggil saat user mengkonfirmasi foto yang diambil
+            // `bytes` adalah hasil akhir berupa ByteArray (data gambar mentah)
             onPhotoConfirmed = { bytes ->
-                // TODO: Lakukan sesuatu dengan hasil foto di sini (misal: simpan ke DB)
+                // ============================================================
+                // [LANGKAH TERAKHIR] HASIL GAMBAR DITERIMA DI SINI
+                // ============================================================
+                // `bytes` adalah ByteArray yang berisi data gambar
+                // Bisa digunakan untuk:
+                // - Upload ke server
+                // - Simpan ke database lokal
+                // - Proses OCR untuk membaca struk
+                // - Konversi ke ImageBitmap untuk ditampilkan
+                // ============================================================
+
                 println("Hasil foto diterima di Home: ${bytes.size} bytes")
 
                 // Simpan gambar
@@ -153,19 +146,7 @@ fun HomeScreen() {
     } else if (showUbahRincian && ocrResult != null) {
         // === MODE UBAH RINCIAN ===
         // Menampilkan halaman edit rincian
-        com.bagi_bill.bagi_bill.ui.screens.rincian.UbahRincianScreen(
-            parsedReceipt = ocrResult!!,
-            onBack = {
-                showUbahRincian = false
-                showRincian = true
-            },
-            onConfirm = { updatedReceipt ->
-                // Update hasil OCR dengan data yang sudah diedit
-                ocrResult = updatedReceipt
-                showUbahRincian = false
-                showRincian = true
-            }
-        )
+        // TODO: Implement UbahRincianScreen
     } else {
         // Scaffold, sebagaia kanvas dasar layout pada material design.
         // Fungsi ini otomatis mengatur ruang untuk UI bawaan dari OS (misalnya status bar, navigation bar)
@@ -262,7 +243,6 @@ fun HomeScreen() {
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = {
-                        /* TODO: aksi fab */
                         scope.launch { showCamera = true }
                     },
                     contentColor = Color.White,
@@ -293,6 +273,9 @@ fun HomeScreen() {
 
                 // Manual Input Bill Section
                 HomeManualInputBillScreen()
+
+                // History Section
+                HomeHistoryScreen()
             }
         }
     }
