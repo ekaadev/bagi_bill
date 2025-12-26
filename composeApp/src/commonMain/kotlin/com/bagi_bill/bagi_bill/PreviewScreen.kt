@@ -136,8 +136,7 @@ fun PreviewScreen(
                         ) {
                             Text(
                                 text = "Foto ulang",
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.White
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
