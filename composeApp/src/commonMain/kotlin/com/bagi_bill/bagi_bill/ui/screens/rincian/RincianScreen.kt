@@ -3,6 +3,7 @@ package com.bagi_bill.bagi_bill.ui.screens.rincian
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -398,7 +399,7 @@ fun RincianScreen(
                                 OutlinedButton(
                                     onClick = onRetakePhoto,
                                     shape = RoundedCornerShape(50),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEEEEEE)),
+                                    border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         contentColor = MaterialTheme.colorScheme.primary,
                                     )

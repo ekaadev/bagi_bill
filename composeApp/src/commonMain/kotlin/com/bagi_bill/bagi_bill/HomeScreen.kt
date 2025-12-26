@@ -146,19 +146,7 @@ fun HomeScreen() {
     } else if (showUbahRincian && ocrResult != null) {
         // === MODE UBAH RINCIAN ===
         // Menampilkan halaman edit rincian
-        com.bagi_bill.bagi_bill.ui.screens.rincian.UbahRincianScreen(
-            parsedReceipt = ocrResult!!,
-            onBack = {
-                showUbahRincian = false
-                showRincian = true
-            },
-            onConfirm = { updatedReceipt ->
-                // Update hasil OCR dengan data yang sudah diedit
-                ocrResult = updatedReceipt
-                showUbahRincian = false
-                showRincian = true
-            }
-        )
+        // TODO: Implement UbahRincianScreen
     } else {
         // Scaffold, sebagaia kanvas dasar layout pada material design.
         // Fungsi ini otomatis mengatur ruang untuk UI bawaan dari OS (misalnya status bar, navigation bar)

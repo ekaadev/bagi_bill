@@ -101,18 +101,17 @@ fun SelectMemberScreen() {
                         ambientColor = Color.Black,
                     ),
                 color = Color.White,
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-
-
-                ){
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+            ) {
                 Column (
-                    modifier = Modifier.padding(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 24.dp,
-                        bottom = 24.dp,
-                    ),
-                ){
+                    modifier = Modifier
+                        .padding(
+                            start = 16.dp,
+                            end = 16.dp,
+                            top = 24.dp,
+                            bottom = 24.dp
+                        )
+                ) {
                     Button(
                         onClick = {
                             // TODO: GO TO SPLIT BILL SCREEN
@@ -122,7 +121,7 @@ fun SelectMemberScreen() {
                             contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(50)
-                    ){
+                    ) {
                         Text(
                             text = "Konfirmasi",
                             fontSize = 16.sp,
