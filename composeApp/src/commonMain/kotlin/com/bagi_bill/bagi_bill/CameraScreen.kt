@@ -107,7 +107,7 @@ private fun CameraUI(
         // 1. Top Bar Transparan
         topBar = {
             TopAppBar(
-                modifier = Modifier.padding(8.dp),
+                modifier = Modifier.padding(horizontal = 8.dp),
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = onBack) {

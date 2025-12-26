@@ -84,7 +84,7 @@ fun PreviewScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                modifier = Modifier.padding(8.dp),
+                modifier = Modifier.padding(horizontal = 8.dp),
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = onRetake) {
