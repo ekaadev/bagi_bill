@@ -294,7 +294,7 @@ private fun CameraUI(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Biar hasilnya optimal, pastiin struknya kebaca dan difoto di tempat terang",
+                            text = "Biar hasilnya optimal, pastikan struknya kebaca dan difoto di tempat terang",
                             color = Color.LightGray,
                             style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center,
