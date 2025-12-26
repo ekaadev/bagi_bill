@@ -717,4 +717,3 @@ fun ListHistorySplitBill() {
         }
     }
 }
-
