@@ -1,12 +1,15 @@
 package com.bagi_bill.bagi_bill
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Help
@@ -30,6 +33,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,20 +94,32 @@ fun SelectMemberScreen() {
                 }
             )
         },
-        bottomBar = {
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
+            // Content yang bisa di-scroll
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 100.dp) // Berikan padding agar konten tidak tertutup bottom bar
+            ) {
+                // TODO: Add content here!
+            }
+            // Bottom bar yang ter-pin di bawah
             Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(
-                        elevation = 32.dp,
-                        clip = false,
-                        spotColor = Color.Black,
-                        ambientColor = Color.Black,
-                    ),
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
                 color = Color.White,
+                shadowElevation = 32.dp, // Shadow dari Surface
+                tonalElevation = 0.dp,
                 shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
             ) {
-                Column (
+                Column(
                     modifier = Modifier
                         .padding(
                             start = 16.dp,
@@ -114,7 +130,7 @@ fun SelectMemberScreen() {
                 ) {
                     Button(
                         onClick = {
-                            // TODO: GO TO SPLIT BILL SCREEN
+                            // TODO: Go to Split Bill Screen
                         },
                         modifier = Modifier.fillMaxWidth().height(43.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -132,7 +148,5 @@ fun SelectMemberScreen() {
                 }
             }
         }
-    ) { innerPadding ->
-
     }
 }
