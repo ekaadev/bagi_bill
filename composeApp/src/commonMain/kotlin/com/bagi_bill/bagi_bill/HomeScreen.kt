@@ -41,7 +41,7 @@ fun HomeScreen() {
     var capturedImageBytes by remember { mutableStateOf<ByteArray?>(null) }
 
     // State lain
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
