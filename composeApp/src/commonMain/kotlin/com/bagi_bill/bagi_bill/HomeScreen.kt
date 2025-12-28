@@ -18,14 +18,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.bagi_bill.bagi_bill.ui.screens.rincian.RincianScreen
+import com.bagi_bill.bagi_bill.ui.screens.rincian.UbahRincianScreen
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-/**
- * OptIn annotation untuk menggunakan API eksperimental dari Material3.
- * Preview annotation untuk melihat ui di IDE.
- * Composable annotation untuk menandai fungsi sebagai UI Composable
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
@@ -34,6 +30,7 @@ fun HomeScreen() {
     // 1. STATE: Pengatur navigasi antara Home dan Camera
     var showCamera by remember { mutableStateOf(false) }
     var showRincian by remember { mutableStateOf(false) }
+    // [GABUNGAN] Tambahkan state ini dari branch kamu
     var showUbahRincian by remember { mutableStateOf(false) }
 
     // State untuk menyimpan hasil OCR
@@ -46,70 +43,30 @@ fun HomeScreen() {
     val scope = rememberCoroutineScope()
 
     val textService = TextRecognitionService()
-    /**
-     * ============================================================================
-     * [LANGKAH 1] TITIK AWAL ALUR KAMERA - HomeScreen.kt
-     * ============================================================================
-     *
-     * Ketika user menekan tombol FAB (FloatingActionButton) di bawah layar:
-     * → State `showCamera` berubah dari false ke true
-     * → Kondisi if(showCamera) terpenuhi
-     * → CameraScreen() dipanggil dan ditampilkan
-     *
-     * CameraScreen memiliki 2 callback:
-     * 1. onExit → dipanggil saat user ingin kembali (tekan tombol back)
-     * 2. onPhotoConfirmed → dipanggil saat user selesai mengambil & mengkonfirmasi foto
-     *    Parameter `bytes` adalah ByteArray yang berisi data gambar (JPEG/PNG)
-     *
-     * LANJUT KE: CameraScreen.kt untuk melihat alur selanjutnya →
-     * ============================================================================
-     */
+
+    // [DEV] Fitur Draft dari Dev
+    val counterItemInDraft = 3
+
+    // LOGIC KAMERA (Sama)
     if (showCamera) {
-        // === MODE KAMERA ===
-        // Memanggil CameraScreen (lihat file: CameraScreen.kt)
         CameraScreen(
-            // Callback: dipanggil saat user tekan tombol back di kamera
             onExit = { showCamera = false },
-
-            // Callback: dipanggil saat user mengkonfirmasi foto yang diambil
-            // `bytes` adalah hasil akhir berupa ByteArray (data gambar mentah)
             onPhotoConfirmed = { bytes ->
-                // ============================================================
-                // [LANGKAH TERAKHIR] HASIL GAMBAR DITERIMA DI SINI
-                // ============================================================
-                // `bytes` adalah ByteArray yang berisi data gambar
-                // Bisa digunakan untuk:
-                // - Upload ke server
-                // - Simpan ke database lokal
-                // - Proses OCR untuk membaca struk
-                // - Konversi ke ImageBitmap untuk ditampilkan
-                // ============================================================
-
                 println("Hasil foto diterima di Home: ${bytes.size} bytes")
-
-                // Simpan gambar
                 capturedImageBytes = bytes
 
                 scope.launch {
                     try {
                         val extractedText = textService.recognizeText(bytes)
                         val result = parserUtil(extractedText)
-
-                        // Simpan hasil OCR
                         ocrResult = result
-
-                        // Tutup kamera dan tampilkan RincianScreen
                         showCamera = false
                         showRincian = true
-
-                        println("xyz: $result")
-
                         println("OCR berhasil: ${result.items.size} items ditemukan")
                     } catch (e: Exception) {
                         println("OCR Error: ${e.message}")
                         e.printStackTrace()
                         showCamera = false
-
                         scope.launch {
                             snackbarHostState.showSnackbar(
                                 message = "Gagal memproses gambar: ${e.message}",
@@ -122,7 +79,6 @@ fun HomeScreen() {
         )
     } else if (showRincian && ocrResult != null) {
         // === MODE RINCIAN ===
-        // Menampilkan hasil OCR di RincianScreen
         RincianScreen(
             parsedReceipt = ocrResult!!,
             imageBytes = capturedImageBytes,
@@ -132,162 +88,277 @@ fun HomeScreen() {
                 capturedImageBytes = null
             },
             onRetakePhoto = {
-                // Tutup rincian dan buka kamera untuk foto ulang
                 showRincian = false
                 showCamera = true
-                // Data OCR dan gambar lama akan diganti dengan yang baru setelah foto ulang
             },
+            // [GABUNGAN] Tambahkan callback ini agar nyambung ke UbahRincian
             onEditDetails = {
-                // Navigasi ke halaman Ubah Rincian
                 showRincian = false
                 showUbahRincian = true
             }
         )
     } else if (showUbahRincian && ocrResult != null) {
-        // === MODE UBAH RINCIAN ===
-        // Menampilkan halaman edit rincian
-        com.bagi_bill.bagi_bill.ui.screens.rincian.UbahRincianScreen(
+        // [GABUNGAN] === MODE UBAH RINCIAN ===
+        // Menggantikan TODO dari Dev dengan Kode Kamu
+        UbahRincianScreen(
             parsedReceipt = ocrResult!!,
             onBack = {
                 showUbahRincian = false
                 showRincian = true
             },
             onConfirm = { updatedReceipt ->
-                // Update hasil OCR dengan data yang sudah diedit
                 ocrResult = updatedReceipt
                 showUbahRincian = false
                 showRincian = true
             }
         )
     } else {
-        // Scaffold, sebagaia kanvas dasar layout pada material design.
-        // Fungsi ini otomatis mengatur ruang untuk UI bawaan dari OS (misalnya status bar, navigation bar)
+        // [DEV UI] Menggunakan Layout Terbaru dari Dev
         Scaffold(
-            // snackbarHost untuk menampilkan snackbar
             snackbarHost = { SnackbarHost( hostState = snackbarHostState)},
-            // modifier untuk mengatur tampilan dan behavior dari layout
             modifier = Modifier
-                .fillMaxSize() // mengisi seluruh ruang yang tersedia
-                .nestedScroll(scrollBehavior.nestedScrollConnection), // Hubungkan scroll konten ke TopBar
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 TopAppBar(
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp),
-                    // Background TopBar
+                    modifier = Modifier.padding(horizontal = 8.dp),
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background, // Sesuaikan warna background
+                        containerColor = MaterialTheme.colorScheme.background,
                         scrolledContainerColor = MaterialTheme.colorScheme.background
                     ),
-
-                    // Icon Profil (kiri)
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            /* TODO: Aksi Profil */
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Fungsi Profile belum tersedia")
-                            }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.AccountCircle,
-                                contentDescription = "Profil",
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(color = Color.White, shape = RoundedCornerShape(100))
-                                    .padding(1.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    },
-
-                    // Status Bar (tengah)
-                    // Row di dalam Row untuk menampung elemen-elemen di tengah
+                    navigationIcon = { }, // Profil icon logic dev
                     title = {
-                        // Row untuk menyusun elemen di dalamnya secara horizontal
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                // Trik agar container status ada di tengah-tengah sisa ruang
-                                .wrapContentWidth(Alignment.CenterHorizontally)
-                                .background(Color.White, shape = RoundedCornerShape(25))
                                 .padding(vertical = 6.dp, horizontal = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Shield,
-                                contentDescription = null,
-                                tint = Color(0xFFD4AF37),
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Good | App Bagi Bill",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                lineHeight = 14.sp,
-                                color = Color.Black
+                                text = "Bagi Bill",
+                                color = Color.Black,
+                                style = MaterialTheme.typography.titleMedium
                             )
+                            // Button draft (Fitur Dev)
+                            Surface(
+                                onClick = { /* TODO */ },
+                                shape = CircleShape,
+                                color = Color.White,
+                                shadowElevation = 2.dp,
+                                tonalElevation = 4.dp
+                            ) {
+                                Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                                    Text("Draft ", style = MaterialTheme.typography.bodyMedium, color = Color.Black)
+                                    Text("($counterItemInDraft)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
                         }
                     },
-
-                    // Icon Bantuan (kanan)
                     actions = {
                         IconButton(onClick = {
-                            /* TODO: Aksi Bantuan */
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Fungsi Bantuan belum tersedia")
-                            }
+                            scope.launch { snackbarHostState.showSnackbar("Fungsi Bantuan belum tersedia") }
                         }) {
-                            Icon(
-                                imageVector = Icons.Default.Help,
-                                contentDescription = "Bantuan",
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(color = Color.White, shape = RoundedCornerShape(100))
-                                    .padding(6.dp),
-                                tint = Color.Gray,
-                            )
+                            Icon(Icons.Filled.Help, "Bantuan", tint = Color.Gray)
                         }
                     },
                     scrollBehavior = scrollBehavior
                 )
             },
-
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = {
-                        scope.launch { showCamera = true }
-                    },
-                    contentColor = Color.White,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(50),
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+            ) {
+                // Content Scrollable
+                Column(
                     modifier = Modifier
-                        .padding(vertical = 12.dp) // padding, agar tidak terlalu bawah
-                        .width(80.dp)
-                        .height(46.dp)
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 100.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.QrCodeScanner,
-                        contentDescription = "Scan QR Code"
-                    )
+                    // [DEV UI] Wallet Section (Fitur Dev)
+                    WalletSection()
+
+                    // Manual Input
+                    HomeManualInputBillScreen()
+
+                    // History
+                    HomeHistoryScreen()
                 }
 
-            },
-            floatingActionButtonPosition = FabPosition.Center,
-        ) { innerPadding ->
-            Column(
+                // [DEV UI] Bottom Bar Floating (Fitur Dev - Bukan FAB)
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth(),
+                    color = Color.White,
+                    shadowElevation = 32.dp,
+                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 24.dp)
+                    ) {
+                        Button(
+                            onClick = { scope.launch { showCamera = true } },
+                            modifier = Modifier.fillMaxWidth().height(43.dp),
+                            colors = ButtonDefaults.buttonColors(contentColor = Color.White),
+                            shape = RoundedCornerShape(50)
+                        ) {
+                            Text("Scan Sekarang", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WalletSection() {
+    val gradientPurple = Brush.verticalGradient(
+        colors = listOf(
+            Color.White,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+        )
+    )
+
+    // Container Wallet Section
+    Card(
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        // Container Column di dalam Card
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            // Row, sebagai card header
+            Row(
                 modifier = Modifier
-                    .padding(innerPadding) // Padding otomatis dari Scaffold agar tidak ketutup TopBar
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Create Group Section
-                HomeCreateGroupScreen()
+                Text(
+                    text = "Dompet kamu",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
 
-                // Manual Input Bill Section
-                HomeManualInputBillScreen()
+                /**
+                 * Surface, sebuah container pembungkus tombol "lihat semua"
+                 * Memiliki behavior onClick
+                 */
+                Surface(
+                    onClick = {
+                        /* TODO: fitur lihat semua */
+                    },
+                    shape = RoundedCornerShape(100),
+                    color = Color.Transparent,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                ) {
+                    // Tombol panah ke kanan
+                    Row(
+                        modifier = Modifier
+                            .background(
+                                brush = gradientPurple,
+                                shape = RoundedCornerShape(100)
+                            )
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Lihat semua",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.Black,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.width((4.dp)))
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
 
-                // History Section
-                HomeHistoryScreen()
+            // Spacer
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Section content card (atur wallet sendiri
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+                color = Color.Transparent,
+                onClick = { }
+            ) {
+                // Icon(kiri) + Text(title, description) (kanan)
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Wallet,
+                        contentDescription = "Wallet",
+                        modifier = Modifier
+                            .border(1.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(50))
+                            .padding(8.dp)
+                            .size(24.dp)
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(35))
+                            .padding(4.dp),
+                        tint = Color.White
+                    )
+
+                    // spacer
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    // text container
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Atur walletmu sendiri",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = "Buat wallet untuk simpan dana patungan biar lebih praktis.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+
+                    // spacer
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Wallet",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
     }
@@ -729,4 +800,3 @@ fun ListHistorySplitBill() {
         }
     }
 }
-
