@@ -278,10 +278,19 @@ private fun CompactItemRow(
                     textStyle = TextStyle(textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, fontSize = 14.sp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier,
                     decorationBox = { inner ->
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                            inner(); Text("x", fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(start = 2.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            inner()
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                "x",
+                                fontSize = 10.sp,
+                                color = Color.Gray
+                            )
                         }
                     }
                 )
