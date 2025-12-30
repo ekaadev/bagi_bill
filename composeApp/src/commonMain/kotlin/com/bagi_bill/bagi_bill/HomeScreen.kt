@@ -79,39 +79,43 @@ fun HomeScreen() {
         )
     } else if (showRincian && ocrResult != null) {
         // === MODE RINCIAN ===
-        RincianScreen(
-            parsedReceipt = ocrResult!!,
-            imageBytes = capturedImageBytes,
-            onBack = {
-                showRincian = false
-                ocrResult = null
-                capturedImageBytes = null
-            },
-            onRetakePhoto = {
-                showRincian = false
-                showCamera = true
-            },
-            // [GABUNGAN] Tambahkan callback ini agar nyambung ke UbahRincian
-            onEditDetails = {
-                showRincian = false
-                showUbahRincian = true
-            }
-        )
+        ocrResult?.let { result ->
+            RincianScreen(
+                parsedReceipt = result,
+                imageBytes = capturedImageBytes,
+                onBack = {
+                    showRincian = false
+                    ocrResult = null
+                    capturedImageBytes = null
+                },
+                onRetakePhoto = {
+                    showRincian = false
+                    showCamera = true
+                },
+                // [GABUNGAN] Tambahkan callback ini agar nyambung ke UbahRincian
+                onEditDetails = {
+                    showRincian = false
+                    showUbahRincian = true
+                }
+            )
+        }
     } else if (showUbahRincian && ocrResult != null) {
         // [GABUNGAN] === MODE UBAH RINCIAN ===
         // Menggantikan TODO dari Dev dengan Kode Kamu
-        UbahRincianScreen(
-            parsedReceipt = ocrResult!!,
-            onBack = {
-                showUbahRincian = false
-                showRincian = true
-            },
-            onConfirm = { updatedReceipt ->
-                ocrResult = updatedReceipt
-                showUbahRincian = false
-                showRincian = true
-            }
-        )
+        ocrResult?.let { result ->
+            UbahRincianScreen(
+                parsedReceipt = result,
+                onBack = {
+                    showUbahRincian = false
+                    showRincian = true
+                },
+                onConfirm = { updatedReceipt ->
+                    ocrResult = updatedReceipt
+                    showUbahRincian = false
+                    showRincian = true
+                }
+            )
+        }
     } else {
         // [DEV UI] Menggunakan Layout Terbaru dari Dev
         Scaffold(
