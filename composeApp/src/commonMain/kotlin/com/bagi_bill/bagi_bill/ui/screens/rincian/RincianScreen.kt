@@ -108,7 +108,7 @@ fun RincianScreen(
                 .fillMaxWidth()
                 .height(160.dp)
                 .align(Alignment.TopCenter)
-                // FIXED: Panggil fungsi yang sudah direname jadi huruf kecil
+                // Gunakan shape lengkung di bagian bawah header
                 .clip(bottomArcShape(curveMagnitude = 40.dp))
         )
 
