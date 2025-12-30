@@ -10,6 +10,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -44,15 +46,34 @@ fun HomeScreen() {
 
     val textService = TextRecognitionService()
 
-    // [DEV] Fitur Draft dari Dev
+    // TODO: ambil dari database jumlah item draft
     val counterItemInDraft = 3
-
-    // LOGIC KAMERA (Sama)
+    /**
+     * ============================================================================
+     * [LANGKAH 1] TITIK AWAL ALUR KAMERA - HomeScreen.kt
+     * ============================================================================
+     *
+     * Ketika user menekan tombol FAB (FloatingActionButton) di bawah layar:
+     * → State `showCamera` berubah dari false ke true
+     * → Kondisi if(showCamera) terpenuhi
+     * → CameraScreen() dipanggil dan ditampilkan
+     *
+     * CameraScreen memiliki 2 callback:
+     * 1. onExit → dipanggil saat user ingin kembali (tekan tombol back)
+     * 2. onPhotoConfirmed → dipanggil saat user selesai mengambil & mengkonfirmasi foto
+     *    Parameter `bytes` adalah ByteArray yang berisi data gambar (JPEG/PNG)
+     *
+     * LANJUT KE: CameraScreen.kt untuk melihat alur selanjutnya →
+     * ============================================================================
+     */
     if (showCamera) {
         CameraScreen(
             onExit = { showCamera = false },
             onPhotoConfirmed = { bytes ->
                 println("Hasil foto diterima di Home: ${bytes.size} bytes")
+                capturedImageBytes = bytes
+
+                // Simpan gambar
                 capturedImageBytes = bytes
 
                 scope.launch {
@@ -130,7 +151,11 @@ fun HomeScreen() {
                         containerColor = MaterialTheme.colorScheme.background,
                         scrolledContainerColor = MaterialTheme.colorScheme.background
                     ),
-                    navigationIcon = { }, // Profil icon logic dev
+                    // Icon Profil (kiri)
+                    navigationIcon = {
+                    },
+                    // Status Bar (tengah)
+                    // Row di dalam Row untuk menampung elemen-elemen di tengah
                     title = {
                         Row(
                             modifier = Modifier
@@ -139,22 +164,37 @@ fun HomeScreen() {
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
+                            // Title
                             Text(
                                 text = "Bagi Bill",
                                 color = Color.Black,
                                 style = MaterialTheme.typography.titleMedium
                             )
-                            // Button draft (Fitur Dev)
+
+                            // Button draft
                             Surface(
-                                onClick = { /* TODO */ },
+                                onClick = {
+                                    // TODO: fitur button history draft
+                                },
                                 shape = CircleShape,
                                 color = Color.White,
                                 shadowElevation = 2.dp,
                                 tonalElevation = 4.dp
                             ) {
-                                Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                                    Text("Draft ", style = MaterialTheme.typography.bodyMedium, color = Color.Black)
-                                    Text("($counterItemInDraft)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                                Row(
+                                    modifier = Modifier
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        text = "Draft ",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.Black
+                                    )
+                                    Text(
+                                        text = "($counterItemInDraft)",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
                         }
@@ -163,7 +203,11 @@ fun HomeScreen() {
                         IconButton(onClick = {
                             scope.launch { snackbarHostState.showSnackbar("Fungsi Bantuan belum tersedia") }
                         }) {
-                            Icon(Icons.Filled.Help, "Bantuan", tint = Color.Gray)
+                            Icon(
+                                imageVector = Icons.Filled.Help,
+                                contentDescription = "Bantuan",
+                                tint = Color.Gray
+                            )
                         }
                     },
                     scrollBehavior = scrollBehavior
@@ -175,42 +219,57 @@ fun HomeScreen() {
                     .padding(innerPadding)
                     .fillMaxSize()
             ) {
-                // Content Scrollable
+                // Content yang bisa di-scroll
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(bottom = 100.dp)
+                        .padding(bottom = 100.dp) // Berikan padding agar konten tidak tertutup bottom bar
                 ) {
-                    // [DEV UI] Wallet Section (Fitur Dev)
+                    // Group Creation Section
                     WalletSection()
 
-                    // Manual Input
+                    // Manual Input Bill Section
                     HomeManualInputBillScreen()
 
-                    // History
+                    // History Section
                     HomeHistoryScreen()
                 }
-
-                // [DEV UI] Bottom Bar Floating (Fitur Dev - Bukan FAB)
+                // Bottom bar yang ter-pin di bawah
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth(),
                     color = Color.White,
-                    shadowElevation = 32.dp,
+                    shadowElevation = 32.dp, // Shadow dari Surface
+                    tonalElevation = 0.dp,
                     shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 24.dp)
+                        modifier = Modifier
+                            .padding(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 24.dp,
+                                bottom = 24.dp
+                            )
                     ) {
                         Button(
-                            onClick = { scope.launch { showCamera = true } },
+                            onClick = {
+                                scope.launch { showCamera = true }
+                            },
                             modifier = Modifier.fillMaxWidth().height(43.dp),
-                            colors = ButtonDefaults.buttonColors(contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(
+                                contentColor = Color.White
+                            ),
                             shape = RoundedCornerShape(50)
                         ) {
-                            Text("Scan Sekarang", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text(
+                                text = "Scan Sekarang",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
                         }
                     }
                 }
@@ -218,6 +277,7 @@ fun HomeScreen() {
         }
     }
 }
+
 
 @Composable
 fun WalletSection() {
