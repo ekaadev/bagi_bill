@@ -618,7 +618,15 @@ fun RincianScreen(
 
 // Fungsi helper untuk format harga
 private fun formatPrice(price: Int): String {
-    return price.toString().reversed().chunked(3).joinToString(".").reversed()
+    // Secara eksplisit menangani nilai 0: tidak ada pemisah ribuan yang perlu diterapkan,
+    // sehingga "0" ditampilkan apa adanya.
+    if (price == 0) return "0"
+
+    return price.toString()
+        .reversed()
+        .chunked(3)
+        .joinToString(".")
+        .reversed()
 }
 
 //Fungsi untuk Membuat Lengkungan pada Gambar Header
