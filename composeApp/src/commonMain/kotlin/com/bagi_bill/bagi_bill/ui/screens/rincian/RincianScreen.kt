@@ -563,7 +563,7 @@ fun RincianScreen(
                             .height(200.dp),
                         placeholder = {
                             Text(
-                                text = "",
+                                text = "Tulis catatan di sini...",
                                 color = Color.Gray
                             )
                         },
