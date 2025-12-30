@@ -451,7 +451,7 @@ fun RincianScreen(
                             // SUMMARY SECTION (Dari hasil OCR)
                             BillSummaryRow("Subtotal", formatPrice(parsedReceipt.summary.subtotal))
                             BillSummaryRow("Pajak", formatPrice(parsedReceipt.summary.pajak))
-                            BillSummaryRow("Servis", "0") // Bisa ditambahkan ke ParsedReceipt jika perlu
+                            BillSummaryRow("Servis", formatPrice(parsedReceipt.summary.servis))
                             BillSummaryRow("Diskon", formatPrice(parsedReceipt.summary.diskon))
                             BillSummaryRow("Lainnya", formatPrice(parsedReceipt.summary.lainnya))
 
