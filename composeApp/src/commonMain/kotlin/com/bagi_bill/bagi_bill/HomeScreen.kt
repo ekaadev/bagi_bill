@@ -2,7 +2,6 @@ package com.bagi_bill.bagi_bill
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,14 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.bagi_bill.bagi_bill.ui.screens.rincian.RincianScreen
+import com.bagi_bill.bagi_bill.ui.screens.rincian.UbahRincianScreen
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-/**
- * OptIn annotation untuk menggunakan API eksperimental dari Material3.
- * Preview annotation untuk melihat ui di IDE.
- * Composable annotation untuk menandai fungsi sebagai UI Composable
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
@@ -37,6 +32,7 @@ fun HomeScreen() {
     // 1. STATE: Pengatur navigasi antara Home dan Camera
     var showCamera by remember { mutableStateOf(false) }
     var showRincian by remember { mutableStateOf(false) }
+    // [GABUNGAN] Tambahkan state ini dari branch kamu
     var showUbahRincian by remember { mutableStateOf(false) }
 
     // State untuk menyimpan hasil OCR
@@ -71,27 +67,11 @@ fun HomeScreen() {
      * ============================================================================
      */
     if (showCamera) {
-        // === MODE KAMERA ===
-        // Memanggil CameraScreen (lihat file: CameraScreen.kt)
         CameraScreen(
-            // Callback: dipanggil saat user tekan tombol back di kamera
             onExit = { showCamera = false },
-
-            // Callback: dipanggil saat user mengkonfirmasi foto yang diambil
-            // `bytes` adalah hasil akhir berupa ByteArray (data gambar mentah)
             onPhotoConfirmed = { bytes ->
-                // ============================================================
-                // [LANGKAH TERAKHIR] HASIL GAMBAR DITERIMA DI SINI
-                // ============================================================
-                // `bytes` adalah ByteArray yang berisi data gambar
-                // Bisa digunakan untuk:
-                // - Upload ke server
-                // - Simpan ke database lokal
-                // - Proses OCR untuk membaca struk
-                // - Konversi ke ImageBitmap untuk ditampilkan
-                // ============================================================
-
                 println("Hasil foto diterima di Home: ${bytes.size} bytes")
+                capturedImageBytes = bytes
 
                 // Simpan gambar
                 capturedImageBytes = bytes
@@ -100,22 +80,14 @@ fun HomeScreen() {
                     try {
                         val extractedText = textService.recognizeText(bytes)
                         val result = parserUtil(extractedText)
-
-                        // Simpan hasil OCR
                         ocrResult = result
-
-                        // Tutup kamera dan tampilkan RincianScreen
                         showCamera = false
                         showRincian = true
-
-                        println("xyz: $result")
-
                         println("OCR berhasil: ${result.items.size} items ditemukan")
                     } catch (e: Exception) {
                         println("OCR Error: ${e.message}")
                         e.printStackTrace()
                         showCamera = false
-
                         scope.launch {
                             snackbarHostState.showSnackbar(
                                 message = "Gagal memproses gambar: ${e.message}",
@@ -128,48 +100,55 @@ fun HomeScreen() {
         )
     } else if (showRincian && ocrResult != null) {
         // === MODE RINCIAN ===
-        // Menampilkan hasil OCR di RincianScreen
-        RincianScreen(
-            parsedReceipt = ocrResult!!,
-            imageBytes = capturedImageBytes,
-            onBack = {
-                showRincian = false
-                ocrResult = null
-                capturedImageBytes = null
-            },
-            onRetakePhoto = {
-                // Tutup rincian dan buka kamera untuk foto ulang
-                showRincian = false
-                showCamera = true
-                // Data OCR dan gambar lama akan diganti dengan yang baru setelah foto ulang
-            },
-            onEditDetails = {
-                // Navigasi ke halaman Ubah Rincian
-                showRincian = false
-                showUbahRincian = true
-            }
-        )
+        ocrResult?.let { result ->
+            RincianScreen(
+                parsedReceipt = result,
+                imageBytes = capturedImageBytes,
+                onBack = {
+                    showRincian = false
+                    ocrResult = null
+                    capturedImageBytes = null
+                },
+                onRetakePhoto = {
+                    showRincian = false
+                    showCamera = true
+                },
+                // [GABUNGAN] Tambahkan callback ini agar nyambung ke UbahRincian
+                onEditDetails = {
+                    showRincian = false
+                    showUbahRincian = true
+                }
+            )
+        }
     } else if (showUbahRincian && ocrResult != null) {
-        // === MODE UBAH RINCIAN ===
-        // Menampilkan halaman edit rincian
-        // TODO: Implement UbahRincianScreen
+        // [GABUNGAN] === MODE UBAH RINCIAN ===
+        // Menggantikan TODO dari Dev dengan Kode Kamu
+        ocrResult?.let { result ->
+            UbahRincianScreen(
+                parsedReceipt = result,
+                onBack = {
+                    showUbahRincian = false
+                    showRincian = true
+                },
+                onConfirm = { updatedReceipt ->
+                    ocrResult = updatedReceipt
+                    showUbahRincian = false
+                    showRincian = true
+                }
+            )
+        }
     } else {
-        // Scaffold, sebagaia kanvas dasar layout pada material design.
-        // Fungsi ini otomatis mengatur ruang untuk UI bawaan dari OS (misalnya status bar, navigation bar)
+        // [DEV UI] Menggunakan Layout Terbaru dari Dev
         Scaffold(
-            // snackbarHost untuk menampilkan snackbar
             snackbarHost = { SnackbarHost( hostState = snackbarHostState)},
-            // modifier untuk mengatur tampilan dan behavior dari layout
             modifier = Modifier
-                .fillMaxSize() // mengisi seluruh ruang yang tersedia
-                .nestedScroll(scrollBehavior.nestedScrollConnection), // Hubungkan scroll konten ke TopBar
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 TopAppBar(
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp),
-                    // Background TopBar
+                    modifier = Modifier.padding(horizontal = 8.dp),
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background, // Sesuaikan warna background
+                        containerColor = MaterialTheme.colorScheme.background,
                         scrolledContainerColor = MaterialTheme.colorScheme.background
                     ),
                     // Icon Profil (kiri)
@@ -178,7 +157,6 @@ fun HomeScreen() {
                     // Status Bar (tengah)
                     // Row di dalam Row untuk menampung elemen-elemen di tengah
                     title = {
-                        // Row untuk menyusun elemen di dalamnya secara horizontal
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -221,14 +199,9 @@ fun HomeScreen() {
                             }
                         }
                     },
-
-                    // Icon Bantuan (kanan)
                     actions = {
                         IconButton(onClick = {
-                            /* TODO: Aksi Bantuan */
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Fungsi Bantuan belum tersedia")
-                            }
+                            scope.launch { snackbarHostState.showSnackbar("Fungsi Bantuan belum tersedia") }
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.Help,

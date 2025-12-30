@@ -13,10 +13,6 @@ import platform.UIKit.UIImage
 @OptIn(ExperimentalForeignApi::class)
 actual fun decodeByteArrayToImageBitmap(byteArray: ByteArray): ImageBitmap? {
     return try {
-        val nsData = byteArray.usePinned { pinned ->
-            NSData.create(bytes = pinned.addressOf(0), length = byteArray.size.toULong())
-        }
-        val uiImage = UIImage.imageWithData(nsData) ?: return null
         Image.makeFromEncoded(byteArray).toComposeImageBitmap()
     } catch (e: Exception) {
         null

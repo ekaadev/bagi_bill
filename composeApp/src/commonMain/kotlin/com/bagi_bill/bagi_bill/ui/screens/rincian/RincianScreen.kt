@@ -3,7 +3,6 @@ package com.bagi_bill.bagi_bill.ui.screens.rincian
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -109,7 +108,7 @@ fun RincianScreen(
                 .fillMaxWidth()
                 .height(160.dp)
                 .align(Alignment.TopCenter)
-                // FIXED: Panggil fungsi yang sudah direname jadi huruf kecil
+                // Gunakan shape lengkung di bagian bawah header
                 .clip(bottomArcShape(curveMagnitude = 40.dp))
         )
 
@@ -399,7 +398,7 @@ fun RincianScreen(
                                 OutlinedButton(
                                     onClick = onRetakePhoto,
                                     shape = RoundedCornerShape(50),
-                                    border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEEEEEE)),
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         contentColor = MaterialTheme.colorScheme.primary,
                                     )
@@ -452,7 +451,7 @@ fun RincianScreen(
                             // SUMMARY SECTION (Dari hasil OCR)
                             BillSummaryRow("Subtotal", formatPrice(parsedReceipt.summary.subtotal))
                             BillSummaryRow("Pajak", formatPrice(parsedReceipt.summary.pajak))
-                            BillSummaryRow("Servis", "0") // Bisa ditambahkan ke ParsedReceipt jika perlu
+                            BillSummaryRow("Servis", formatPrice(parsedReceipt.summary.servis))
                             BillSummaryRow("Diskon", formatPrice(parsedReceipt.summary.diskon))
                             BillSummaryRow("Lainnya", formatPrice(parsedReceipt.summary.lainnya))
 
@@ -564,7 +563,7 @@ fun RincianScreen(
                             .height(200.dp),
                         placeholder = {
                             Text(
-                                text = "",
+                                text = "Tulis catatan di sini...",
                                 color = Color.Gray
                             )
                         },
@@ -619,7 +618,15 @@ fun RincianScreen(
 
 // Fungsi helper untuk format harga
 private fun formatPrice(price: Int): String {
-    return price.toString().reversed().chunked(3).joinToString(".").reversed()
+    // Secara eksplisit menangani nilai 0: tidak ada pemisah ribuan yang perlu diterapkan,
+    // sehingga "0" ditampilkan apa adanya.
+    if (price == 0) return "0"
+
+    return price.toString()
+        .reversed()
+        .chunked(3)
+        .joinToString(".")
+        .reversed()
 }
 
 //Fungsi untuk Membuat Lengkungan pada Gambar Header
