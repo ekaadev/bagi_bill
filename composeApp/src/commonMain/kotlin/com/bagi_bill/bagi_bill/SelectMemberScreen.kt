@@ -39,7 +39,10 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
-fun SelectMemberScreen() {
+fun SelectMemberScreen(
+    onBack: () -> Unit = {},
+    onConfirm: () -> Unit = {}
+) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     // Base Frame Select Member Screen
     Scaffold(
@@ -56,9 +59,7 @@ fun SelectMemberScreen() {
                 ),
                 navigationIcon = {
                     IconButton(
-                        onClick = {
-                           // TODO: Handle back navigation
-                        }
+                        onClick = onBack
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
@@ -129,9 +130,7 @@ fun SelectMemberScreen() {
                         )
                 ) {
                     Button(
-                        onClick = {
-                            // TODO: Go to Split Bill Screen
-                        },
+                        onClick = onConfirm,
                         modifier = Modifier.fillMaxWidth().height(43.dp),
                         colors = ButtonDefaults.buttonColors(
                             contentColor = Color.White

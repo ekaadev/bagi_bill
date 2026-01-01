@@ -51,6 +51,7 @@ fun RincianScreen(
     onBack: () -> Unit,
     onRetakePhoto: () -> Unit = {},
     onEditDetails: () -> Unit = {},
+    onConfirm: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // State untuk nama split bill
