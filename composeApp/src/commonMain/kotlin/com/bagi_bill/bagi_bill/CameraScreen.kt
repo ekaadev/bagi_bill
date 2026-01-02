@@ -67,7 +67,7 @@ fun CameraScreen(
             },
             onConfirm = {
                 onPhotoConfirmed(capturedPhoto!!)
-                onExit()
+                // onExit() // Biarkan NavigationSystem yang mengatur navigasi (ke Rincian)
             }
         )
     }
@@ -91,9 +91,6 @@ private fun CameraUI(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-
-    // Handle Android back button
-    BackHandler(onBack = onBack)
 
     if (showGalleryPicker) {
         GalleryImagePicker { bytes ->
