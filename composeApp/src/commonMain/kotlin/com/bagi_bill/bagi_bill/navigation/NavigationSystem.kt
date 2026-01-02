@@ -88,6 +88,8 @@ fun AppNavigator(
         composable(Routes.CAMERA) {
             CameraScreen(
                 onExit = {
+                    // Logic: Jika previousBackStackEntry ada, popBackStack.
+                    // Jika tidak ada (misal startDestination), exit app.
                     if (!navController.popBackStack()) {
                         onExitApp()
                     }
@@ -98,13 +100,38 @@ fun AppNavigator(
                             val extractedText = textService.recognizeText(bytes)
                             val parsedReceipt = parserUtil(extractedText)
 
-                            // Simpan data di ViewModel sebelum navigasi
+                            // Simpan data di ViewModel
                             sharedViewModel.setImageBytes(bytes)
                             sharedViewModel.setParsedReceipt(parsedReceipt)
 
-                            // Navigate to Rincian, pop Camera agar tidak bisa back ke Camera
-                            navController.navigate(Routes.RINCIAN) {
-                                popUpTo(Routes.CAMERA) { inclusive = true }
+                            // Cek apakah kita datang dari Rincian (Retake Photo)
+                            // Jika previousBackStackEntry adalah RINCIAN, kita pop back ke sana
+                            // Tapi karena kita mau update data, lebih aman navigate ke RINCIAN
+                            // dengan popUpTo CAMERA inclusive = true agar stack bersih.
+                            
+                            // Logic User:
+                            // 1. Home -> Camera -> Rincian (Normal Flow)
+                            // 2. Rincian -> Camera (Retake) -> Rincian (Update)
+                            
+                            // Saat ini implementasi di bawah ini akan selalu membuat Rincian baru
+                            // dan menghapus Camera dari stack. Ini sesuai dengan flow 1.
+                            // Untuk flow 2, karena kita navigate ke CAMERA dari RINCIAN tanpa pop Rincian,
+                            // maka stacknya: Home -> Rincian -> Camera.
+                            // Jika confirm foto baru, kita mau: Home -> Rincian (Updated).
+                            // Jadi kita harus pop Camera dan kembali ke Rincian.
+                            
+                            val previousRoute = navController.previousBackStackEntry?.destination?.route
+                            
+                            if (previousRoute == Routes.RINCIAN) {
+                                // Kasus Retake Photo: Kembali ke Rincian yang sudah ada di stack
+                                // Data di ViewModel sudah diupdate, jadi Rincian akan recompose dengan data baru
+                                navController.popBackStack()
+                            } else {
+                                // Kasus Normal: Home -> Camera -> Rincian
+                                // Navigate ke Rincian, hapus Camera dari stack
+                                navController.navigate(Routes.RINCIAN) {
+                                    popUpTo(Routes.CAMERA) { inclusive = true }
+                                }
                             }
                         } catch (e: Exception) {
                             println("OCR Error: ${e.message}")
@@ -124,12 +151,18 @@ fun AppNavigator(
                 RincianScreen(
                     parsedReceipt = parsedReceipt!!,
                     imageBytes = imageBytes,
-                    onBack = { navController.popBackStack() },
-                    onRetakePhoto = {
-                        // Kembali ke Camera, clear stack sampai Home
-                        navController.navigate(Routes.CAMERA) {
-                            popUpTo(Routes.HOME) { inclusive = false }
+                    onBack = { 
+                        // Logic: Back dari Rincian selalu ke Home (sesuai request user)
+                        // "jika di halaman rincian pencet icon back atau hapus jendela aktif maka dia kembali ke home"
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.HOME) { inclusive = true }
                         }
+                    },
+                    onRetakePhoto = {
+                        // Logic: Masuk ke Camera untuk foto ulang.
+                        // Stack saat ini: Home -> Rincian
+                        // Navigate ke Camera tanpa pop Rincian agar bisa kembali jika cancel
+                        navController.navigate(Routes.CAMERA)
                     },
                     onEditDetails = {
                         navController.navigate(Routes.UBAH_RINCIAN)
