@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.bagi_bill.bagi_bill.*
+import com.bagi_bill.bagi_bill.ui.screens.PembagianBillScreen
 import com.bagi_bill.bagi_bill.ui.screens.rincian.RincianScreen
 import com.bagi_bill.bagi_bill.ui.screens.rincian.UbahRincianScreen
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,6 +65,7 @@ object Routes {
     const val RINCIAN = "rincian"
     const val UBAH_RINCIAN = "ubah_rincian"
     const val SELECT_MEMBER = "select_member"
+    const val SPLIT_BILL = "split_bill"
     const val DONE = "done"
 }
 
@@ -208,13 +210,14 @@ fun AppNavigator(
 
         // ===== SELECT MEMBER SCREEN =====
         composable(Routes.SELECT_MEMBER) {
+            val existingData by sharedViewModel.splitBillData.collectAsState()
             SelectMemberScreen(
+                initialData = existingData,
                 onBack = {
                     // Kembali ke Rincian screen
                     navController.popBackStack()
                 },
                 onNavigateToSplitBill = { splitBillData ->
-                    // Simpan data member ke ViewModel
                     sharedViewModel.setSplitBillData(splitBillData)
 
                     // Debug log untuk melihat data yang dikirim
@@ -226,14 +229,38 @@ fun AppNavigator(
                         println("  - ${member.name}: ${member.wallet ?: "No wallet"} - ${member.phoneNumber ?: "No phone"}")
                     }
 
-                    // TODO: Navigate ke Split Bill Screen setelah di-merge
-                    // navController.navigate(Routes.SPLIT_BILL)
+                    // Navigasi Ke Split Bill Screen
+                    navController.navigate(Routes.SPLIT_BILL)
 
-                    // Sementara tampilkan info bahwa data sudah siap
-                    println("✅ Data siap untuk Split Bill Screen!")
-                    println("✅ Menunggu Split Bill Screen di-merge...")
                 }
             )
+        }
+
+        // ===== SPLIT BILL SCREEN =====
+        composable(Routes.SPLIT_BILL) {
+            // Ambil data dari ViewModel
+            val splitBillData by sharedViewModel.splitBillData.collectAsState()
+            val parsedReceipt by sharedViewModel.parsedReceipt.collectAsState()
+
+            // Pastikan data ada sebelum render
+            if (splitBillData != null && parsedReceipt != null) {
+                PembagianBillScreen(
+                    splitBillData = splitBillData!!,
+                    parsedReceipt = parsedReceipt!!,
+                    onBackClick = { navController.popBackStack() },
+                    onEditMembers = { navController.popBackStack() },
+                    onSendClick = {
+                        // TODO: Implement logic kirim ke API/WhatsApp di sini
+                        println("Kirim data pembagian bill...")
+                        // navController.navigate(Routes.DONE)
+                    }
+                )
+            } else {
+                // Fallback jika data hilang (misal process death), balik ke Home
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.HOME) { popUpTo(Routes.HOME) { inclusive = true } }
+                }
+            }
         }
     }
 }
