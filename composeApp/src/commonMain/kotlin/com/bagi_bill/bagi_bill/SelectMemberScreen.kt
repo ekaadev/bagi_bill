@@ -265,6 +265,7 @@ val indonesianWallets = listOf(
 @Preview
 @Composable
 fun SelectMemberScreen(
+    onBack: () -> Unit = {},
     onNavigateToSplitBill: (SplitBillData) -> Unit = { }
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -336,6 +337,7 @@ fun SelectMemberScreen(
                 scrollBehavior = scrollBehavior,
                 payerMember = payerMember,
                 members = members,
+                onBack = onBack,
                 onAddMember = { newMember ->
                     members.add(newMember)
                 },
@@ -377,6 +379,7 @@ fun SelectMemberContent(
     scrollBehavior: TopAppBarScrollBehavior,
     payerMember: Member,
     members: List<Member>,
+    onBack: () -> Unit = {},
     onAddMember: (Member) -> Unit,
     onRemoveMember: (String) -> Unit,
     onReplacePayer: () -> Unit,
