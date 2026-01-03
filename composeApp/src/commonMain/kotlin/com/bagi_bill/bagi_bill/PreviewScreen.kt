@@ -1,8 +1,11 @@
 package com.bagi_bill.bagi_bill
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -63,6 +66,7 @@ import androidx.compose.ui.unit.sp
  *
  * ============================================================================
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PreviewScreen(
     photoBytes: ByteArray,    // Data gambar dalam bentuk ByteArray
@@ -74,94 +78,110 @@ fun PreviewScreen(
     // rememberBitmapFromBytes adalah helper function untuk konversi
     val imageBitmap = rememberBitmapFromBytes(photoBytes)
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-    ) {
-        // Tampilkan gambar
-        if (imageBitmap != null) {
-            Image(
-                bitmap = imageBitmap,
-                contentDescription = "Preview Foto",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
-            )
-        } else {
-            Text(
-                text = "Gagal memuat gambar",
-                color = Color.White,
-                fontSize = 16.sp,
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
+    // Handle System Back Button
+    BackHandler(onBack = onRetake)
 
-        // Tombol Back (Kiri Atas) - Tetap ada agar user bisa batal
-        IconButton(
-            onClick = onRetake,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
-                .statusBarsPadding()
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                title = {},
+                navigationIcon = {
+                    IconButton(onClick = onRetake) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(Color.Gray.copy(alpha = 0.6f), CircleShape)
+                                .padding(8.dp),
+                            tint = Color.LightGray
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent
+                )
             )
-        }
-
-        // ========== TOMBOL AKSI (BAWAH) ==========
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(24.dp)
-                .navigationBarsPadding(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // ========== TOMBOL FOTO ULANG ==========
-            // Hanya muncul jika foto diambil dari kamera (bukan galeri)
-            // Karena jika dari galeri, tidak masuk akal untuk "foto ulang"
-            if (!isFromGallery) {
-                Button(
-                    onClick = onRetake,  // Kembali ke CameraUI
+        },
+        bottomBar = {
+            BottomAppBar(
+                modifier = Modifier.padding(bottom = 16.dp),
+                containerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.primary
+            ) {
+                Row(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.LightGray
-                    ),
-                    shape = RoundedCornerShape(25.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = if (isFromGallery) Arrangement.Center else Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Foto ulang",
-                        color = Color.Black,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    if (!isFromGallery) {
+                        OutlinedButton(
+                            onClick = onRetake,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.primary
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                2.dp,
+                                MaterialTheme.colorScheme.primary
+                            ),
+                            shape = RoundedCornerShape(25.dp)
+                        ) {
+                            Text(
+                                text = "Foto ulang",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        shape = RoundedCornerShape(25.dp)
+                    ) {
+                        Text(
+                            text = "Pakai foto ini",
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
-
-            // ========== TOMBOL PAKAI FOTO INI ==========
-            // Tombol konfirmasi - saat ditekan:
-            // 1. onConfirm() dipanggil
-            // 2. CameraScreen memanggil onPhotoConfirmed(capturedPhoto)
-            // 3. HomeScreen menerima ByteArray di callback onPhotoConfirmed
-            // 4. onExit() dipanggil untuk kembali ke HomeScreen
-            Button(
-                onClick = onConfirm,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.LightGray
-                ),
-                shape = RoundedCornerShape(25.dp)
-            ) {
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Tampilkan gambar
+            if (imageBitmap != null) {
+                Image(
+                    bitmap = imageBitmap,
+                    contentDescription = "Preview Foto",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
                 Text(
-                    text = "Pakai foto ini",
-                    color = Color.Black,
-                    fontWeight = FontWeight.SemiBold
+                    text = "Gagal memuat gambar",
+                    color = Color.White,
+                    fontSize = 16.sp
                 )
             }
         }

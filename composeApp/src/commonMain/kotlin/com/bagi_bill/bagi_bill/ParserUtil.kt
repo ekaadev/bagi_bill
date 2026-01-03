@@ -13,7 +13,8 @@ data class ReceiptSummary(
     val pajak: Int = 0,             // Pajak jika ada
     val diskon: Int = 0,            // Diskon jika ada
     val lainnya: Int = 0,           // Balance jika ada perhitungan tidak sesuai
-    val total: Int = 0              // Jumlah keseluruhan
+    val total: Int = 0,             // Jumlah keseluruhan
+    val servis: Int = 0             // Service charge jika ada
 )
 
 // Data class untuk hasil parsing
