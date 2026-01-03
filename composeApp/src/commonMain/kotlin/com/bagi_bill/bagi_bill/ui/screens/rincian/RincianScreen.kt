@@ -223,7 +223,7 @@ fun RincianScreen(
                         ),
                     ){
                         Button(
-                            onClick = {},
+                            onClick = onConfirm,
                             modifier = Modifier.fillMaxWidth().height(43.dp),
                             colors = ButtonDefaults.buttonColors(
                                 contentColor = Color.White
