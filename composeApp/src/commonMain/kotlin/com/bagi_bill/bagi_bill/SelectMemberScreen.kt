@@ -396,9 +396,7 @@ fun SelectMemberContent(
                 ),
                 navigationIcon = {
                     IconButton(
-                        onClick = {
-                           // TODO: Handle back navigation
-                        }
+                        onClick = onBack
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,

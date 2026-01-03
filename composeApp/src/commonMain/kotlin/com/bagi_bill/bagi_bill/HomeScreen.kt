@@ -27,124 +27,24 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
-fun HomeScreen() {
-
-    // 1. STATE: Pengatur navigasi antara Home dan Camera
-    var showCamera by remember { mutableStateOf(false) }
-    var showRincian by remember { mutableStateOf(false) }
-    // [GABUNGAN] Tambahkan state ini dari branch kamu
-    var showUbahRincian by remember { mutableStateOf(false) }
-
-    // State untuk menyimpan hasil OCR
-    var ocrResult by remember { mutableStateOf<ParsedReceipt?>(null) }
-    var capturedImageBytes by remember { mutableStateOf<ByteArray?>(null) }
-
+fun HomeScreen(
+    onNavigateToCamera: () -> Unit = {}
+) {
     // State lain
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    val textService = TextRecognitionService()
-
     // TODO: ambil dari database jumlah item draft
     val counterItemInDraft = 3
-    /**
-     * ============================================================================
-     * [LANGKAH 1] TITIK AWAL ALUR KAMERA - HomeScreen.kt
-     * ============================================================================
-     *
-     * Ketika user menekan tombol FAB (FloatingActionButton) di bawah layar:
-     * → State `showCamera` berubah dari false ke true
-     * → Kondisi if(showCamera) terpenuhi
-     * → CameraScreen() dipanggil dan ditampilkan
-     *
-     * CameraScreen memiliki 2 callback:
-     * 1. onExit → dipanggil saat user ingin kembali (tekan tombol back)
-     * 2. onPhotoConfirmed → dipanggil saat user selesai mengambil & mengkonfirmasi foto
-     *    Parameter `bytes` adalah ByteArray yang berisi data gambar (JPEG/PNG)
-     *
-     * LANJUT KE: CameraScreen.kt untuk melihat alur selanjutnya →
-     * ============================================================================
-     */
-    if (showCamera) {
-        CameraScreen(
-            onExit = { showCamera = false },
-            onPhotoConfirmed = { bytes ->
-                println("Hasil foto diterima di Home: ${bytes.size} bytes")
-                capturedImageBytes = bytes
 
-                // Simpan gambar
-                capturedImageBytes = bytes
-
-                scope.launch {
-                    try {
-                        val extractedText = textService.recognizeText(bytes)
-                        val result = parserUtil(extractedText)
-                        ocrResult = result
-                        showCamera = false
-                        showRincian = true
-                        println("OCR berhasil: ${result.items.size} items ditemukan")
-                    } catch (e: Exception) {
-                        println("OCR Error: ${e.message}")
-                        e.printStackTrace()
-                        showCamera = false
-                        scope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = "Gagal memproses gambar: ${e.message}",
-                                duration = SnackbarDuration.Long
-                            )
-                        }
-                    }
-                }
-            }
-        )
-    } else if (showRincian && ocrResult != null) {
-        // === MODE RINCIAN ===
-        ocrResult?.let { result ->
-            RincianScreen(
-                parsedReceipt = result,
-                imageBytes = capturedImageBytes,
-                onBack = {
-                    showRincian = false
-                    ocrResult = null
-                    capturedImageBytes = null
-                },
-                onRetakePhoto = {
-                    showRincian = false
-                    showCamera = true
-                },
-                // [GABUNGAN] Tambahkan callback ini agar nyambung ke UbahRincian
-                onEditDetails = {
-                    showRincian = false
-                    showUbahRincian = true
-                }
-            )
-        }
-    } else if (showUbahRincian && ocrResult != null) {
-        // [GABUNGAN] === MODE UBAH RINCIAN ===
-        // Menggantikan TODO dari Dev dengan Kode Kamu
-        ocrResult?.let { result ->
-            UbahRincianScreen(
-                parsedReceipt = result,
-                onBack = {
-                    showUbahRincian = false
-                    showRincian = true
-                },
-                onConfirm = { updatedReceipt ->
-                    ocrResult = updatedReceipt
-                    showUbahRincian = false
-                    showRincian = true
-                }
-            )
-        }
-    } else {
-        // [DEV UI] Menggunakan Layout Terbaru dari Dev
-        Scaffold(
-            snackbarHost = { SnackbarHost( hostState = snackbarHostState)},
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = {
+    // [DEV UI] Menggunakan Layout Terbaru dari Dev
+    Scaffold(
+        snackbarHost = { SnackbarHost( hostState = snackbarHostState)},
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
                 TopAppBar(
                     modifier = Modifier.padding(horizontal = 8.dp),
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -255,9 +155,7 @@ fun HomeScreen() {
                             )
                     ) {
                         Button(
-                            onClick = {
-                                scope.launch { showCamera = true }
-                            },
+                            onClick = onNavigateToCamera,
                             modifier = Modifier.fillMaxWidth().height(43.dp),
                             colors = ButtonDefaults.buttonColors(
                                 contentColor = Color.White
@@ -276,8 +174,6 @@ fun HomeScreen() {
             }
         }
     }
-}
-
 
 @Composable
 fun WalletSection() {

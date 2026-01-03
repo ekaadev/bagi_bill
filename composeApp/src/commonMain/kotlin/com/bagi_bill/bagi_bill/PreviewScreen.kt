@@ -1,5 +1,6 @@
 package com.bagi_bill.bagi_bill
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -77,7 +78,7 @@ fun PreviewScreen(
     // rememberBitmapFromBytes adalah helper function untuk konversi
     val imageBitmap = rememberBitmapFromBytes(photoBytes)
 
-    // Handle Android back button
+    // Handle System Back Button
     BackHandler(onBack = onRetake)
 
     Scaffold(

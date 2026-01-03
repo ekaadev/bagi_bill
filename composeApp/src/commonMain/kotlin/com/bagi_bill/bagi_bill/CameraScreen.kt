@@ -1,5 +1,6 @@
 package com.bagi_bill.bagi_bill
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -67,7 +68,7 @@ fun CameraScreen(
             },
             onConfirm = {
                 onPhotoConfirmed(capturedPhoto!!)
-                onExit()
+                // onExit() // Biarkan NavigationSystem yang mengatur navigasi (ke Rincian)
             }
         )
     }
@@ -92,7 +93,7 @@ private fun CameraUI(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Handle Android back button
+    // Handle System Back Button
     BackHandler(onBack = onBack)
 
     if (showGalleryPicker) {
