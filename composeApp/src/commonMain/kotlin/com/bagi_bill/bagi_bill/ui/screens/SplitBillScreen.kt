@@ -1,5 +1,9 @@
 package com.bagi_bill.bagi_bill.ui.screens
 
+// 1. IMPORT DATA DARI TEMAN (Source)
+
+// 2. IMPORT DATA UI KITA (Target)
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -19,50 +23,82 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bagi_bill.bagi_bill.ParsedReceipt
+import com.bagi_bill.bagi_bill.SplitBillData
 import com.bagi_bill.bagi_bill.model.AssignableBillItem
-import com.bagi_bill.bagi_bill.model.Member
 import com.bagi_bill.bagi_bill.ui.components.*
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import com.bagi_bill.bagi_bill.model.Member as UiMember
 
 // Warna Background
 val BoneWhite = Color(0xFFF5F5F5)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
-@Preview
 @Composable
 fun PembagianBillScreen(
-    onBackClick: () -> Unit = {}
+    splitBillData: SplitBillData,
+    parsedReceipt: ParsedReceipt,
+    onBackClick: () -> Unit = {},
+    onEditMembers: () -> Unit = {},
+    onSendClick: () -> Unit = {}
 ) {
-    // 1. DATA DUMMY & STATE
-    val members = remember {
-        listOf(
-            Member("1", "Kamu", "K", Color(0xFF4CAF50)),
-            Member("2", "Albertt", "A", Color(0xFF2196F3)),
-            Member("3", "Yohanes", "Y", Color(0xFFFFC107)),
-            Member("4", "Jeffrey", "J", Color(0xFF9C27B0))
-        )
+    // 3. KONVERSI DATA ANGGOTA (SourceMember -> UiMember)
+    // Kita tambahkan logic pemberian warna random dan inisial di sini
+    val members = remember(splitBillData) {
+        // Gabungkan payer + members lainnya dari data teman
+        val allSourceMembers = listOf(splitBillData.payer) + splitBillData.members
+
+        allSourceMembers.map { source ->
+            UiMember(
+                id = source.id,
+                name = source.name,
+                // Ambil huruf pertama nama untuk inisial
+                initial = source.name.firstOrNull()?.uppercase() ?: "?",
+                // Generate warna konsisten berdasarkan nama
+                avatarColor = generateColorForName(source.name)
+            )
+        }
     }
 
-    val billItems = remember {
-        mutableStateListOf(
-            AssignableBillItem("1", "House Blend Coffee (H)", 25000, 1, listOf("1")),
-            AssignableBillItem("2", "Hazelnut Choco MT (L)", 28000, 1, emptyList()),
-            AssignableBillItem("3", "Nasi Goreng Spesial", 35000, 1, listOf("2", "4")),
-            AssignableBillItem("4", "Es Teh Manis", 5000, 2, emptyList())
-        )
+    // 4. KONVERSI ITEM BILL
+    val billItems = remember(parsedReceipt) {
+        mutableStateListOf<AssignableBillItem>().apply {
+            addAll(
+                parsedReceipt.items.mapIndexed { index, item ->
+                    AssignableBillItem(
+                        id = index.toString(),
+                        name = item.name,
+                        price = item.price,
+                        qty = item.qty,
+                        assignedMemberIds = emptyList()
+                    )
+                }
+            )
+        }
     }
 
-    var selectedMemberId by remember { mutableStateOf("1") }
+    var selectedMemberId by remember { mutableStateOf(members.firstOrNull()?.id ?: "") }
+
+    // 5. LOGIC SUMMARY
+    val subtotal = remember(billItems.toList()) { billItems.sumOf { it.price * it.qty } }
+    val pajak = parsedReceipt.summary.pajak
+    val servis = parsedReceipt.summary.servis
+    val diskon = parsedReceipt.summary.diskon
+    val lainnya = parsedReceipt.summary.lainnya
+    val total = subtotal + pajak + servis + lainnya - diskon
+
+    // 6. LOGIC PROGRESS CARD KUNING
+    val assignedItemCount = billItems.count { it.assignedMemberIds.isNotEmpty() }
+    val totalItems = billItems.sumOf { it.qty }
+    val unassignedAmount = billItems
+        .filter { it.assignedMemberIds.isEmpty() }
+        .sumOf { it.price * it.qty }
+
 
     Scaffold(
         containerColor = BoneWhite,
-
-        // 2. TOP BAR
         topBar = {
             TopAppBar(
-                title = {
-                    Text("Pembagian split bill", fontWeight = FontWeight.Medium, fontSize = 18.sp)
-                },
+                title = { Text("Pembagian split bill", fontWeight = FontWeight.Medium, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -76,19 +112,11 @@ fun PembagianBillScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BoneWhite)
             )
         },
-
-        // 3. BOTTOM BAR
         bottomBar = {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(
-                        elevation = 20.dp,
-                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                        clip = false,
-                        spotColor = Color.Black.copy(alpha = 0.6f),
-                        ambientColor = Color.Black.copy(alpha = 0.6f)
-                    )
+                    .shadow(elevation = 20.dp, shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp), clip = false, spotColor = Color.Black.copy(alpha = 0.6f), ambientColor = Color.Black.copy(alpha = 0.6f))
             ) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -96,68 +124,45 @@ fun PembagianBillScreen(
                     shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = 24.dp,
-                            bottom = 24.dp,
-                        ),
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 24.dp),
                     ) {
                         Button(
-                            onClick = { /* Todo: Logic Kirim */ },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(43.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = Color.White
-                            ),
+                            onClick = onSendClick,
+                            modifier = Modifier.fillMaxWidth().height(43.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.White),
                             shape = RoundedCornerShape(50)
                         ) {
-                            Text(
-                                text = "Kirim ke anggota",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                            Text(text = "Kirim ke anggota", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
                 }
             }
         }
     ) { innerPadding ->
-
-        // 4. KONTEN LAZY COLUMN
         Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
-            // [NOTE]: Kita TIDAK pakai padding bottom disini, biar Surface Putih bisa tembus sampai bawah
-            // Efek 'Lurus' saat scroll didapat dari Surface yang memanjang ke bawah tombol.
         ) {
-            // WADAH KARTU PUTIH UTAMA (Background Lurus)
             Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
                 color = Color.White,
-                // [PENTING]: Hanya Top yang rounded. Bottom Lurus (0.dp).
-                // Ini membuat efek "kartu panjang tak berujung" saat scroll.
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    // Padding bottom 0 agar footer bisa menempel pas di bawah
                     contentPadding = PaddingValues(bottom = 0.dp)
                 ) {
-
-                    // BAGIAN A1: HEADER TITLE
+                    // A1. HEADER
                     item {
-                        MemberHeaderTitle(onEditMembersClick = { /* Todo */ })
+                        MemberHeaderTitle(
+                            // 2. Hubungkan callback disini
+                            onEditMembersClick = onEditMembers
+                        )
                     }
 
-                    // BAGIAN A2: AVATAR ROW (Sticky)
+                    // A2. STICKY AVATAR
                     stickyHeader {
                         MemberAvatarRow(
                             members = members,
@@ -166,21 +171,19 @@ fun PembagianBillScreen(
                         )
                     }
 
-                    // BAGIAN A3: TOMBOL BAGI RATA
+                    // A3. TOMBOL BAGI RATA
                     item {
                         SplitEvenlyButton(
                             onSplitEvenlyClick = {
                                 val allMemberIds = members.map { it.id }
-                                val updatedItems = billItems.map { item ->
-                                    item.copy(assignedMemberIds = allMemberIds)
-                                }
+                                val updatedItems = billItems.map { item -> item.copy(assignedMemberIds = allMemberIds) }
                                 billItems.clear()
                                 billItems.addAll(updatedItems)
                             }
                         )
                     }
 
-                    // BAGIAN B: LIST ITEMS
+                    // B. LIST ITEMS
                     items(items = billItems) { item ->
                         AssignmentBillItemRow(
                             item = item,
@@ -188,99 +191,63 @@ fun PembagianBillScreen(
                             isAssignedToCurrentUser = item.assignedMemberIds.contains(selectedMemberId),
                             onToggle = {
                                 val currentList = item.assignedMemberIds.toMutableList()
-                                if (currentList.contains(selectedMemberId)) {
-                                    currentList.remove(selectedMemberId)
-                                } else {
-                                    currentList.add(selectedMemberId)
-                                }
+                                if (currentList.contains(selectedMemberId)) currentList.remove(selectedMemberId) else currentList.add(selectedMemberId)
                                 val index = billItems.indexOf(item)
-                                if (index != -1) {
-                                    billItems[index] = item.copy(assignedMemberIds = currentList)
-                                }
+                                if (index != -1) billItems[index] = item.copy(assignedMemberIds = currentList)
                             }
                         )
                     }
 
-                    // BAGIAN C: SUMMARY
+                    // C. SUMMARY
                     item {
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color.White)
-                                .padding(horizontal = 20.dp, vertical = 20.dp)
+                            modifier = Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 20.dp, vertical = 20.dp)
                         ) {
-                            BillSummaryRow("Subtotal", "53.000")
-                            BillSummaryRow("Pajak", "0")
-                            BillSummaryRow("Servis", "0")
-                            BillSummaryRow("Diskon", "0")
-                            BillSummaryRow("Lainnya", "0")
-
+                            BillSummaryRow("Subtotal", formatPrice(subtotal))
+                            BillSummaryRow("Pajak", formatPrice(pajak))
+                            BillSummaryRow("Servis", formatPrice(servis))
+                            BillSummaryRow("Diskon", formatPrice(diskon))
+                            BillSummaryRow("Lainnya", formatPrice(lainnya))
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalDivider(thickness = 1.dp, color = Color.LightGray.copy(alpha = 0.5f))
                             Spacer(modifier = Modifier.height(16.dp))
-
-                            BillSummaryRow("Jumlah total", "53.000", isTotal = true)
+                            BillSummaryRow("Jumlah total", formatPrice(total), isTotal = true)
                         }
                     }
 
-                    // D. DIVIDER SEBELUM INFO CARD
+                    // D. DIVIDER
                     item {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 20.dp),
-                            thickness = 1.dp,
-                            color = Color.LightGray.copy(alpha = 0.2f)
-                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Color.LightGray.copy(alpha = 0.2f))
                     }
 
-                    // E. FOOTER & INFO CARD (MAGIC SECTION) 🪄
+                    // E. FOOTER (MAGIC SECTION)
                     item {
-                        // [TRIK VISUAL]:
-                        // Kita bungkus Card Kuning ini dengan Box berwarna BoneWhite (Abu-abu).
-                        // Tapi kita buat Column Putih di dalamnya yang Rounded Bawah.
-                        // Saat item ini scroll naik, Background BoneWhite akan menutupi Surface Putih lurus di belakangnya.
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(BoneWhite) // Layer Paling Bawah: ABU-ABU
-                        ) {
-                            // Layer Tengah: PUTIH DENGAN ROUNDED BAWAH
+                        Box(modifier = Modifier.fillMaxWidth().background(BoneWhite)) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(
-                                        Color.White,
-                                        // Ini yang bikin efek rounded saat mentok bawah
-                                        RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
-                                    )
-                                    .padding(bottom = 24.dp) // Jarak dari ujung kertas putih ke Card Kuning
+                                    .background(Color.White, RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
+                                    .padding(bottom = 24.dp)
                             ) {
-                                // Spacer untuk jarak dari divider atas
                                 Spacer(modifier = Modifier.height(24.dp))
-
-                                // Layer Atas: CARD KUNING
                                 Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 20.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
                                     border = BorderStroke(1.dp, Color(0xFFFFD54F))
                                 ) {
                                     Column(
-                                        modifier = Modifier
-                                            .padding(12.dp)
-                                            .fillMaxWidth(),
+                                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         Text(
-                                            text = "0 dari ${billItems.size} pesanan dihitung",
+                                            text = "$assignedItemCount dari $totalItems pesanan dihitung",
                                             style = MaterialTheme.typography.labelLarge,
                                             fontWeight = FontWeight.Bold,
                                             color = Color.Black
                                         )
                                         Text(
-                                            text = "Rp53.000 belum masuk itungan",
+                                            text = "Rp${formatPrice(unassignedAmount)} belum masuk itungan",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = Color(0xFFE65100)
                                         )
@@ -290,12 +257,27 @@ fun PembagianBillScreen(
                         }
                     }
 
-                    // Spacer akhir di luar area putih (agar bisa scroll lebih naik lagi)
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().height(16.dp).background(BoneWhite))
-                    }
+                    item { Box(modifier = Modifier.fillMaxWidth().height(16.dp).background(BoneWhite)) }
                 }
             }
         }
     }
+}
+
+// === HELPER FUNCTIONS ===
+
+// 1. Helper Format Price
+private fun formatPrice(price: Int): String {
+    if (price == 0) return "0"
+    return price.toString().reversed().chunked(3).joinToString(".").reversed()
+}
+
+// 2. Helper Generator Warna Avatar (Agar konsisten dengan nama)
+fun generateColorForName(name: String): Color {
+    val colors = listOf(
+        Color(0xFF00897B), Color(0xFF1976D2), Color(0xFFE53935),
+        Color(0xFFFB8C00), Color(0xFF8E24AA), Color(0xFF43A047)
+    )
+    if (name.isEmpty()) return colors[0]
+    return colors[name.first().uppercaseChar().code % colors.size]
 }
