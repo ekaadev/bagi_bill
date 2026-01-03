@@ -127,34 +127,37 @@ fun PembagianBillScreen(
         }
     ) { innerPadding ->
 
-        // 4. KONTEN LAZY COLUMN (Di dalam Container Besar)
+        // 4. KONTEN LAZY COLUMN
         Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .padding(horizontal = 16.dp) // Margin Kiri Kanan agar Kartu melayang
+                .padding(horizontal = 16.dp)
+            // [NOTE]: Kita TIDAK pakai padding bottom disini, biar Surface Putih bisa tembus sampai bawah
+            // Efek 'Lurus' saat scroll didapat dari Surface yang memanjang ke bawah tombol.
         ) {
-            // WADAH KARTU PUTIH (FRAME UTAMA)
+            // WADAH KARTU PUTIH UTAMA (Background Lurus)
             Surface(
                 modifier = Modifier
-                    .weight(1f) // Isi sisa ruang
+                    .weight(1f)
                     .fillMaxWidth(),
                 color = Color.White,
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp) // Kartu Melengkung Atas
+                // [PENTING]: Hanya Top yang rounded. Bottom Lurus (0.dp).
+                // Ini membuat efek "kartu panjang tak berujung" saat scroll.
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 20.dp)
+                    // Padding bottom 0 agar footer bisa menempel pas di bawah
+                    contentPadding = PaddingValues(bottom = 0.dp)
                 ) {
 
-                    // BAGIAN A1: HEADER TITLE (Item Biasa -> Scroll Naik)
+                    // BAGIAN A1: HEADER TITLE
                     item {
-                        MemberHeaderTitle(
-                            onEditMembersClick = { /* Todo */ }
-                        )
+                        MemberHeaderTitle(onEditMembersClick = { /* Todo */ })
                     }
 
-                    // BAGIAN A2: AVATAR ROW (Sticky -> Nempel di Atap Kartu)
+                    // BAGIAN A2: AVATAR ROW (Sticky)
                     stickyHeader {
                         MemberAvatarRow(
                             members = members,
@@ -163,7 +166,7 @@ fun PembagianBillScreen(
                         )
                     }
 
-                    // BAGIAN A3: TOMBOL BAGI RATA (Item Biasa -> Masuk Kolong Sticky)
+                    // BAGIAN A3: TOMBOL BAGI RATA
                     item {
                         SplitEvenlyButton(
                             onSplitEvenlyClick = {
@@ -198,14 +201,13 @@ fun PembagianBillScreen(
                         )
                     }
 
-                    // BAGIAN C: SUMMARY (Bagian Bawah Kartu)
+                    // BAGIAN C: SUMMARY
                     item {
-                        // Tidak perlu Surface lagi karena sudah dibungkus Container Utama
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(Color.White)
-                                .padding(20.dp)
+                                .padding(horizontal = 20.dp, vertical = 20.dp)
                         ) {
                             BillSummaryRow("Subtotal", "53.000")
                             BillSummaryRow("Pajak", "0")
@@ -221,43 +223,76 @@ fun PembagianBillScreen(
                         }
                     }
 
-                    // D. SPACER PEMISAH
-                    item { Spacer(modifier = Modifier.height(16.dp)) }
-
-                    // E. INFO CARD KUNING (Terpisah dari Kartu Putih)
+                    // D. DIVIDER SEBELUM INFO CARD
                     item {
-                        // Bungkus Box agar ada margin dalam (karena LazyColumn paddingnya 0 relatif terhadap Container Putih)
-                        // Tapi karena ini di luar konteks visual kartu putih, kita akali dengan background transparan
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 20.dp),
+                            thickness = 1.dp,
+                            color = Color.LightGray.copy(alpha = 0.2f)
+                        )
+                    }
+
+                    // E. FOOTER & INFO CARD (MAGIC SECTION) 🪄
+                    item {
+                        // [TRIK VISUAL]:
+                        // Kita bungkus Card Kuning ini dengan Box berwarna BoneWhite (Abu-abu).
+                        // Tapi kita buat Column Putih di dalamnya yang Rounded Bawah.
+                        // Saat item ini scroll naik, Background BoneWhite akan menutupi Surface Putih lurus di belakangnya.
+
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(BoneWhite) // Samakan dengan background luar
-                                .padding(bottom = 16.dp) // Jarak bawah
+                                .background(BoneWhite) // Layer Paling Bawah: ABU-ABU
                         ) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                                border = BorderStroke(1.dp, Color(0xFFFFD54F))
+                            // Layer Tengah: PUTIH DENGAN ROUNDED BAWAH
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        Color.White,
+                                        // Ini yang bikin efek rounded saat mentok bawah
+                                        RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
+                                    )
+                                    .padding(bottom = 24.dp) // Jarak dari ujung kertas putih ke Card Kuning
                             ) {
-                                Column(
-                                    modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                // Spacer untuk jarak dari divider atas
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                // Layer Atas: CARD KUNING
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 20.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                                    border = BorderStroke(1.dp, Color(0xFFFFD54F))
                                 ) {
-                                    Text(
-                                        text = "0 dari ${billItems.size} pesanan dihitung",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.Black
-                                    )
-                                    Text(
-                                        text = "Rp53.000 belum masuk itungan",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color(0xFFE65100)
-                                    )
+                                    Column(
+                                        modifier = Modifier
+                                            .padding(12.dp)
+                                            .fillMaxWidth(),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "0 dari ${billItems.size} pesanan dihitung",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.Black
+                                        )
+                                        Text(
+                                            text = "Rp53.000 belum masuk itungan",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color(0xFFE65100)
+                                        )
+                                    }
                                 }
                             }
                         }
+                    }
+
+                    // Spacer akhir di luar area putih (agar bisa scroll lebih naik lagi)
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().height(16.dp).background(BoneWhite))
                     }
                 }
             }
