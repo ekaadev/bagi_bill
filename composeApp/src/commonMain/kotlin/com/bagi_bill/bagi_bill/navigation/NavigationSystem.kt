@@ -35,6 +35,9 @@ class SharedViewModel : ViewModel() {
     private val _imageBytes = MutableStateFlow<ByteArray?>(null)
     val imageBytes = _imageBytes.asStateFlow()
 
+    private val _splitBillData = MutableStateFlow<SplitBillData?>(null)
+    val splitBillData = _splitBillData.asStateFlow()
+
     fun setParsedReceipt(receipt: ParsedReceipt) {
         _parsedReceipt.value = receipt
     }
@@ -43,9 +46,14 @@ class SharedViewModel : ViewModel() {
         _imageBytes.value = bytes
     }
 
+    fun setSplitBillData(data: SplitBillData) {
+        _splitBillData.value = data
+    }
+
     fun clearData() {
         _parsedReceipt.value = null
         _imageBytes.value = null
+        _splitBillData.value = null
     }
 }
 
@@ -201,9 +209,29 @@ fun AppNavigator(
         // ===== SELECT MEMBER SCREEN =====
         composable(Routes.SELECT_MEMBER) {
             SelectMemberScreen(
-                onBack = { navController.popBackStack() },
-                onConfirm = {
-                    navController.navigate(Routes.DONE)
+                onBack = {
+                    // Kembali ke Rincian screen
+                    navController.popBackStack()
+                },
+                onNavigateToSplitBill = { splitBillData ->
+                    // Simpan data member ke ViewModel
+                    sharedViewModel.setSplitBillData(splitBillData)
+
+                    // Debug log untuk melihat data yang dikirim
+                    println("=== Data Member Tersimpan ===")
+                    println("Payer: ${splitBillData.payer.name} - ${splitBillData.payer.wallet} - ${splitBillData.payer.phoneNumber}")
+                    println("Total Members: ${splitBillData.totalMembers}")
+                    println("Members dengan payment info: ${splitBillData.membersWithPaymentInfo}")
+                    splitBillData.members.forEach { member ->
+                        println("  - ${member.name}: ${member.wallet ?: "No wallet"} - ${member.phoneNumber ?: "No phone"}")
+                    }
+
+                    // TODO: Navigate ke Split Bill Screen setelah di-merge
+                    // navController.navigate(Routes.SPLIT_BILL)
+
+                    // Sementara tampilkan info bahwa data sudah siap
+                    println("✅ Data siap untuk Split Bill Screen!")
+                    println("✅ Menunggu Split Bill Screen di-merge...")
                 }
             )
         }
