@@ -13,13 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.bagi_bill.bagi_bill.model.BillItem
 
-// DATA MODEL
-data class BillItem(
-    val name: String,
-    val qty: Int,
-    val price: Int // Kita pakai Int dulu biar gampang (14500)
-)
 
 // KOMPONEN BARIS ITEM (Atomic UI)
 @Composable

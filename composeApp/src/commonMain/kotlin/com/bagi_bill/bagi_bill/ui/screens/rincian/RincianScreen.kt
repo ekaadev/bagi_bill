@@ -1,7 +1,5 @@
 package com.bagi_bill.bagi_bill.ui.screens.rincian
 
-
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -36,7 +34,7 @@ import androidx.compose.ui.unit.sp
 import bagi_bill.composeapp.generated.resources.Res
 import bagi_bill.composeapp.generated.resources.header_rincian
 import com.bagi_bill.bagi_bill.ParsedReceipt
-import com.bagi_bill.bagi_bill.ui.components.BillItem
+import com.bagi_bill.bagi_bill.model.BillItem
 import com.bagi_bill.bagi_bill.ui.components.BillItemRow
 import com.bagi_bill.bagi_bill.ui.components.BillSummaryRow
 import com.bagi_bill.bagi_bill.ui.components.WhiteCircleIconButton
@@ -55,8 +53,6 @@ fun RincianScreen(
     onConfirm: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Handle System Back Button
-    BackHandler(onBack = onBack)
 
     // State untuk nama split bill
     var splitBillName by remember { mutableStateOf(parsedReceipt.name) }
