@@ -24,8 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bagi_bill.bagi_bill.ParsedReceipt
-import com.bagi_bill.bagi_bill.SplitBillData
 import com.bagi_bill.bagi_bill.model.AssignableBillItem
+import com.bagi_bill.bagi_bill.model.SplitBillData
 import com.bagi_bill.bagi_bill.ui.components.*
 import com.bagi_bill.bagi_bill.model.Member as UiMember
 
@@ -39,7 +39,7 @@ fun PembagianBillScreen(
     parsedReceipt: ParsedReceipt,
     onBackClick: () -> Unit = {},
     onEditMembers: () -> Unit = {},
-    onSendClick: () -> Unit = {}
+    onSendClick: (List<AssignableBillItem>) -> Unit = {}
 ) {
     // 3. KONVERSI DATA ANGGOTA (SourceMember -> UiMember)
     // Kita tambahkan logic pemberian warna random dan inisial di sini
@@ -127,7 +127,7 @@ fun PembagianBillScreen(
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 24.dp),
                     ) {
                         Button(
-                            onClick = onSendClick,
+                            onClick = { onSendClick(billItems) },
                             modifier = Modifier.fillMaxWidth().height(43.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.White),
                             shape = RoundedCornerShape(50)
