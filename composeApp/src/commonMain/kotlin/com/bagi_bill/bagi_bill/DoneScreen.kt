@@ -1,11 +1,13 @@
 package com.bagi_bill.bagi_bill
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -29,9 +31,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import bagi_bill.composeapp.generated.resources.Res
 import bagi_bill.composeapp.generated.resources.logo_bca
 import com.bagi_bill.bagi_bill.utils.decodeByteArrayToImageBitmap
+import com.bagi_bill.bagi_bill.utils.rememberShareHelper
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -42,29 +47,46 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import bagi_bill.composeapp.generated.resources.header_rincian
+import com.bagi_bill.bagi_bill.model.AssignableBillItem
+import com.bagi_bill.bagi_bill.model.Member
+import com.bagi_bill.bagi_bill.model.SplitBillData
+import com.bagi_bill.bagi_bill.model.ProcessedItem
+import com.bagi_bill.bagi_bill.model.ProcessedMember
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Preview
 fun DoneScreen(
+    splitBillData: SplitBillData,
+    assignedItems: List<AssignableBillItem>,
     imageBytes: ByteArray? = null,
+    transactionDate: String? = null,
     onNavigateToRincian: () -> Unit = {},
+    onBack: () -> Unit = {},
     onGoHome: () -> Unit = {}
 ) {
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
+    var showImageDialog by remember { mutableStateOf(false) }
+
+    val shareHelper = rememberShareHelper()
+    val graphicsLayer = rememberGraphicsLayer()
 
     // Konversi ByteArray ke ImageBitmap untuk ditampilkan
     val capturedImage: ImageBitmap? = remember(imageBytes) {
@@ -79,55 +101,74 @@ fun DoneScreen(
         }
     }
 
-    // Data for sharing
-    val memberList = listOf(
-        DummyMember(
-            name = "John Doe",
-            phone = "+62",
-            isCreator = true,
-            total = "Rp300.000",
-            items = listOf(
-                DummyItem("Nasi Goreng Spesial", 1, "Rp45.000"),
-                DummyItem("Es Jeruk", 1, "Rp15.000")
-            )
-        ),
-        DummyMember(
-            name = "John Doesn't",
-            phone = "+62",
-            isCreator = false,
-            total = "Rp200.000",
-            items = listOf(
-                DummyItem("NASI PUTIH", 1, "Rp190.000"),
-                DummyItem("Lainnya", 1, "Rp10.000")
-            )
-        ),
-    )
+    // State untuk kontrol capture offscreen
+    var triggerCapture by remember { mutableStateOf(false) }
 
-    fun generateShareText(): String {
-        val sb = StringBuilder()
-        sb.appendLine("📋 RINCIAN SPLIT BILL")
-        sb.appendLine("━━━━━━━━━━━━━━━━━━━━")
-        sb.appendLine("🏪 Toko: Toko Batik")
-        sb.appendLine("📅 Tanggal: 12/2/2005 - 19:30 PM")
-        sb.appendLine("💰 Total: Rp500.000")
-        sb.appendLine()
-        sb.appendLine("🏦 BANK TUJUAN:")
-        sb.appendLine("Bank: BCA")
-        sb.appendLine("No. Rekening: 874294")
-        sb.appendLine("A/n: John Doe")
-        sb.appendLine()
-        sb.appendLine("👥 ANGGOTA (${memberList.size}):")
-        sb.appendLine("━━━━━━━━━━━━━━━━━━━━")
-        memberList.forEach { member ->
-            sb.appendLine("• ${member.name} ${if (member.isCreator) "(Pembuat)" else ""}")
-            sb.appendLine("  Bayar: ${member.total}")
-            sb.appendLine("  Items:")
-            member.items.forEach { item ->
-                sb.appendLine("    - ${item.name} x${item.qty} = ${item.price}")
-            }
-            sb.appendLine()
+    // --- UTILS ---
+    fun formatCurrency(amount: Int): String {
+        val reversed = amount.toString().reversed()
+        val chunked = reversed.chunked(3).joinToString(".")
+        return "Rp${chunked.reversed()}"
+    }
+
+    // --- DATA PROCESSING ---
+    val processedMembers = remember(splitBillData, assignedItems) {
+        val allMembers = listOf(splitBillData.payer) + splitBillData.members
+
+        allMembers.map { member ->
+            val myItems = assignedItems.filter { it.assignedMemberIds.contains(member.id) }
+                .map { item ->
+                    val splitCount = item.assignedMemberIds.size.coerceAtLeast(1)
+                    val sharePrice = item.price / splitCount
+                    ProcessedItem(
+                        name = item.name,
+                        qty = item.qty,
+                        sharePrice = sharePrice
+                    )
+                }
+
+            val totalPay = myItems.sumOf { it.sharePrice }
+
+            ProcessedMember(
+                member = member,
+                isPayer = member.id == splitBillData.payer.id,
+                items = myItems,
+                totalToPay = totalPay
+            )
         }
-        return sb.toString()
+    }
+
+    val totalBillAmount = remember(assignedItems) {
+        assignedItems.sumOf { it.price }
+    }
+
+    if (showImageDialog && capturedImage != null) {
+        Dialog(
+            onDismissRequest = { showImageDialog = false },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+                usePlatformDefaultWidth = false // Agar bisa full width
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { showImageDialog = false } // Klik background tutup
+                    .background(Color.Black.copy(alpha = 0.8f)), // Gelap transparan
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    bitmap = capturedImage,
+                    contentDescription = "Full Image",
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f) // 90% layar
+                        .wrapContentHeight()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(enabled = false) {} // Disable click on image (supaya gak close kalau klik gambar)
+                )
+            }
+        }
     }
 
     Scaffold(
@@ -139,13 +180,12 @@ fun DoneScreen(
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.background
+                    scrolledContainerColor = Color.White // Putih saat scroll
                 ),
                 navigationIcon = {
                     IconButton(onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Fungsi Profile belum tersedia")
-                        }
+                        // Back ke Home Screen (sesuai request)
+                        onGoHome() 
                     }
                     ) {
                         Icon(
@@ -153,9 +193,8 @@ fun DoneScreen(
                             contentDescription = "Back",
                             modifier = Modifier
                                 .size(40.dp)
-                                .background(color = Color.White, shape = RoundedCornerShape(100))
                                 .padding(6.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = Color.Black
                         )
                     }
                 },
@@ -163,9 +202,7 @@ fun DoneScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .wrapContentWidth(Alignment.CenterHorizontally)
-                            .background(Color.White, shape = RoundedCornerShape(25))
-                            .padding(vertical = 6.dp, horizontal = 12.dp),
+                            .padding(vertical = 6.dp),
                         horizontalArrangement = Arrangement.Start,
                     ) {
                         Text(
@@ -184,24 +221,19 @@ fun DoneScreen(
                             contentDescription = "Edit",
                             modifier = Modifier
                                 .size(40.dp)
-                                .background(color = Color.White, shape = RoundedCornerShape(100))
                                 .padding(6.dp),
                             tint = Color.Gray,
                         )
                     }
 
                     IconButton(onClick = {
-                        scope.launch {
-                            clipboardManager.setText(AnnotatedString(generateShareText()))
-                            snackbarHostState.showSnackbar("Rincian berhasil disalin ke clipboard!")
-                        }
+                        triggerCapture = true // Pemicu capture layout khusus
                     }) {
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = "Share",
                             modifier = Modifier
                                 .size(40.dp)
-                                .background(color = Color.White, shape = RoundedCornerShape(100))
                                 .padding(6.dp),
                             tint = Color.Gray,
                         )
@@ -217,7 +249,6 @@ fun DoneScreen(
                             contentDescription = "Bantuan",
                             modifier = Modifier
                                 .size(40.dp)
-                                .background(color = Color.White, shape = RoundedCornerShape(100))
                                 .padding(6.dp),
                             tint = Color.Gray,
                         )
@@ -227,26 +258,77 @@ fun DoneScreen(
             )
         },
     ) { paddingValues ->
+        
+        Box(modifier = Modifier.fillMaxSize()) {
+            
+            // LAYOUT KHUSUS CAPTURE (Offscreen / Hidden)
+            // Ditaruh di dalam Box tapi dengan Alpha 0 agar tidak terlihat user (tapi tetap di-render)
+            // Menggunakan verticalScroll agar konten bisa diukur melebihi tinggi layar (tidak terpotong)
+            if (triggerCapture) {
+                 Box(
+                     modifier = Modifier
+                         .alpha(0f)
+                         .verticalScroll(rememberScrollState())
+                 ) {
+                     CaptureLayout(
+                         splitBillData = splitBillData,
+                         processedMembers = processedMembers,
+                         totalBillAmount = totalBillAmount,
+                         transactionDate = transactionDate,
+                         capturedImage = capturedImage,
+                         formatCurrency = ::formatCurrency,
+                         graphicsLayer = graphicsLayer,
+                         onCaptured = { bitmap ->
+                             triggerCapture = false // Reset trigger
+                             scope.launch {
+                                 try {
+                                     shareHelper.shareBillImage(bitmap)
+                                 } catch (e: Exception) {
+                                     snackbarHostState.showSnackbar("Gagal membagikan gambar: ${e.message}")
+                                 }
+                             }
+                         }
+                     )
+                 }
+            }
 
-// KOTAK PEMBUNGKUS UTAMA (LAYAR)
-        Column(
-            modifier = Modifier
-                .padding(paddingValues) // PENTING: Turunkan konten di bawah TopBar
-                .fillMaxSize()
-                .padding(16.dp) // Jarak dari tepi layar HP
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
-            // KOTAK KARTU (STRUK/BILL)
+            // KOTAK PEMBUNGKUS UTAMA (LAYAR)
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(color = MaterialTheme.colorScheme.primary)
-                    .padding(16.dp), // Padding di DALAM kartu (jarak konten ke tepi biru)
-                horizontalAlignment = Alignment.CenterHorizontally // Agar semua anak di tengah horizontal
+                    .padding(paddingValues) // PENTING: Turunkan konten di bawah TopBar
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp) // Jarak dari tepi layar HP
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // KOTAK KARTU (STRUK/BILL)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .drawWithContent {
+                        graphicsLayer.record {
+                            this@drawWithContent.drawContent()
+                        }
+                        drawContent()
+                    }
+            ) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                border = BorderStroke(1.dp, Color.LightGray)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp), // Padding di DALAM kartu (jarak konten ke tepi biru)
+                    horizontalAlignment = Alignment.CenterHorizontally // Agar semua anak di tengah horizontal
+                ) {
 
                 // BAGIAN 1: INFO ATAS (Image, Toko, Tanggal)
                 // Tidak perlu Row satu-satu, cukup Column ini sudah center semua
@@ -258,62 +340,84 @@ fun DoneScreen(
                         contentDescription = "Gambar struk",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .width(80.dp)
-                            .height(120.dp)
+                            .size(80.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(Color.White)
+                            .clickable { showImageDialog = true }
                     )
-                } 
-                // else {
-                //     Image(
-                //         painter = painterResource(Res.drawable.foto_struk_belanja_10),
-                //         contentDescription = "Gambar struk",
-                //         contentScale = ContentScale.Crop,
-                //         modifier = Modifier
-                //             .width(80.dp)
-                //             .height(120.dp)
-                //             .clip(RoundedCornerShape(10.dp))
-                //             .background(Color.White) // Opsional: biar gambar menonjol
-                //     )
-                // }
+                }
+                 else {
+                     Image(
+                         painter = painterResource(Res.drawable.header_rincian),
+                         contentDescription = "Gambar struk",
+                         contentScale = ContentScale.Crop,
+                         modifier = Modifier
+                             .size(80.dp)
+                             .clip(RoundedCornerShape(10.dp))
+                             .background(Color.White) // Opsional: biar gambar menonjol
+                     )
+                 }
 
                 Spacer(modifier = Modifier.height(8.dp)) // Jarak antar elemen
 
                 // Nama Toko
                 Text(
-                    text = "Toko Batik",
-                    color = MaterialTheme.colorScheme.onPrimary, // Warna teks kontras
+                    text = splitBillData.merchantName,
+                    color = Color.Black, // Warna teks kontras
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp
                 )
 
-                // Tanggal
+                 // Tanggal
                 Text(
-                    text = "12/2/2005 - 19:30 PM",
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+                    text = transactionDate ?: "Tanggal tidak tersedia",
+                    color = Color.Black.copy(alpha = 0.8f),
                     fontSize = 14.sp
                 )
-
                 Spacer(modifier = Modifier.height(16.dp)) // Jarak sebelum garis
 
                 // GARIS PUTUS-PUTUS 1
                 DashedDivider(color = Color.LightGray.copy(alpha = 0.5f))
 
                 // BAGIAN 2: HARGA
-                Text(
-                    text = "Rp500.000",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(vertical = 10.dp) // Jarak 10dp atas bawah dari divider
-                )
+                Column(
+                    modifier = Modifier.padding(vertical = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Total Biaya",
+                        fontSize = 14.sp,
+                        color = Color.Black.copy(alpha = 0.7f),
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = formatCurrency(totalBillAmount),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
 
                 // GARIS PUTUS-PUTUS 2
                 DashedDivider(color = Color.LightGray.copy(alpha = 0.5f))
 
                 Spacer(modifier = Modifier.height(16.dp)) // Jarak setelah garis
 
-                Wallet()
+                // LABEL Teks: Tujuan Pembayaran
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Tujuan pembayaran",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Wallet(splitBillData.payer)
 
                 Spacer(modifier = Modifier.height(16.dp)) // Jarak sebelum garis
 
@@ -321,31 +425,23 @@ fun DoneScreen(
 
                 Spacer(modifier = Modifier.height(16.dp)) // Jarak setelah garis
 
-                Anggota(memberList)
+                Anggota(processedMembers, ::formatCurrency)
 
-            }
-        }
-    }
+                }
+            } // End of Card
+
+            } // End of Box Wrappper
+
+            Spacer(modifier = Modifier.height(16.dp)) // Jarak antar elemen
+
+        } // End of Column
+        } // End of Box
+    } // End of Scaffold
 }
 
 // FUNGSI UNTUK WALLET
-// --- 1. MODEL DATA DUMMY (Langsung di sini) ---
-data class DummyMember(
-    val name: String,
-    val phone: String,
-    val isCreator: Boolean,
-    val total: String,
-    val items: List<DummyItem>
-)
-
-data class DummyItem(
-    val name: String,
-    val qty: Int,
-    val price: String
-)
-
 @Composable
-fun Wallet() {
+fun Wallet(payer: Member) {
     val clipboardManager = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
 
@@ -360,16 +456,21 @@ fun Wallet() {
     ) {
 
         // --- GAMBAR LOGO ---
-        Image(
-            painter = painterResource(Res.drawable.logo_bca),
-            contentDescription = "Logo Bank",
-            contentScale = ContentScale.Fit, // Fit biar logo utuh
+        Box(
             modifier = Modifier
                 .size(50.dp)
                 .clip(RoundedCornerShape(8.dp)) // Curve dikit di logo
-                .background(Color.White)
-                .padding(4.dp) // Padding dalam biar logo gak nempel pinggir putih
-        )
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(4.dp), // Padding dalam biar logo gak nempel pinggir putih
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Wallet,
+                contentDescription = "Logo Wallet1",
+                tint = Color.White,
+                modifier = Modifier.size(40.dp)
+            )
+        }
 
         // 2. SPACER: Memberi jarak antara Logo dan Teks (biar gak nempel)
         Spacer(modifier = Modifier.width(16.dp))
@@ -380,10 +481,10 @@ fun Wallet() {
         ) {
             // Nama Pemilik
             Text(
-                text = "John Doe",
+                text = payer.name,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
+                color = Color.Black
             )
 
             // Baris Nomor & Icon Copy
@@ -392,9 +493,9 @@ fun Wallet() {
                 modifier = Modifier.padding(top = 4.dp)
             ) {
                 Text(
-                    text = "87429476677888",
+                    text = payer.phoneNumber ?: "-",
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = Color.Black
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -406,7 +507,7 @@ fun Wallet() {
                     modifier = Modifier
                         .size(18.dp)
                         .clickable {
-                            clipboardManager.setText(AnnotatedString("87429409999999999"))
+                            clipboardManager.setText(AnnotatedString(payer.phoneNumber ?: ""))
                             scope.launch {
                                 // You can add snackbar here if needed
                             }
@@ -419,28 +520,10 @@ fun Wallet() {
 
 // FUNGSI UNTUK MENGATUR RINCIAN ANGGOTA
 @Composable
-fun Anggota(memberList: List<DummyMember> = listOf(
-    DummyMember(
-        name = "John Doe",
-        phone = "+62",
-        isCreator = true,
-        total = "Rp300.000",
-        items = listOf(
-            DummyItem("Nasi Goreng Spesial", 1, "Rp45.000"),
-            DummyItem("Es Jeruk", 1, "Rp15.000")
-        )
-    ),
-    DummyMember(
-        name = "John Doesn't",
-        phone = "+62",
-        isCreator = false,
-        total = "Rp200.000",
-        items = listOf(
-            DummyItem("NASI PUTIH", 1, "Rp190.000"),
-            DummyItem("Lainnya", 1, "Rp10.000")
-        )
-    ),
-)) {
+fun Anggota(
+    processedMembers: List<ProcessedMember>,
+    currencyFormatter: (Int) -> String
+) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -449,22 +532,22 @@ fun Anggota(memberList: List<DummyMember> = listOf(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Anggota (${memberList.size})",
+                text = "Anggota (${processedMembers.size})",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary
+                color = Color.Black
             )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // B. LIST ANGGOTA (Wrapping tiap anggota)
-        memberList.forEachIndexed { index, member ->
-            MemberItemRow(member)
-            if (index < memberList.size - 1) { // Only add divider if not the last item
-                Spacer(modifier = Modifier.height(16.dp))
+        processedMembers.forEachIndexed { index, pm ->
+            MemberItemRow(pm, currencyFormatter)
+            if (index < processedMembers.size - 1) { // Only add divider if not the last item
+                Spacer(modifier = Modifier.height(8.dp))
                 DashedDivider(color = Color.LightGray.copy(alpha = 0.5f))
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -472,137 +555,327 @@ fun Anggota(memberList: List<DummyMember> = listOf(
 
 // --- 3. KOMPONEN ITEM PER ORANG (Biar rapi) ---
 @Composable
-fun MemberItemRow(data: DummyMember) {
+fun MemberItemRow(
+    data: ProcessedMember,
+    currencyFormatter: (Int) -> String
+) {
     // State untuk buka-tutup rincian
     var isExpanded by remember { mutableStateOf(false) }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
+    // Hitung inisial & warna (Disamakan dari SplitBillScreen)
+    val initial = remember(data.member.name) { data.member.name.firstOrNull()?.uppercase() ?: "?" }
+    val avatarColor = remember(data.member.name) { generateColorForName(data.member.name) }
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
     ) {
-        // KIRI: Icon Avatar
-        Icon(
-            imageVector = Icons.Outlined.AccountCircle,
-            contentDescription = null,
-            modifier = Modifier.size(50.dp),
-            tint = MaterialTheme.colorScheme.onPrimary // Changed from Color.Black
-        )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // KANAN: Detail Info
-        Column(
-            modifier = Modifier.weight(1f)
+        // BARIS 1: Header (Icon + Nama + NoHP + Harga)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically // Sejajar vertikal dengan icon dan text column
         ) {
-            // Baris 1: Nama & Harga Total
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            // KIRI: Icon Avatar (Initial + Random Color)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(avatarColor),
+                contentAlignment = Alignment.Center
             ) {
-                // Kolom Nama & Badge Pembuat
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = data.name,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onPrimary // Added consistent color
-                        )
-                        if (data.isCreator) {
-                            Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = initial.toString(),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // KANAN: Detail Info (Nama & Harga)
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                // Baris Nama & Harga Total
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Kolom Nama & Badge Pembuat
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "• Pembuat",
-                                color = Color(0xFF00C853), // Warna Hijau
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
+                                text = data.member.name,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.Black
                             )
+                            if (data.isPayer) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "• Pembuat",
+                                    color = Color(0xFF00C853), // Warna Hijau
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
+                        // No HP
+                        Text(
+                            text = data.member.phoneNumber ?: "-",
+                            color = Color.Black.copy(alpha = 0.7f),
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(top = 2.dp) // Sedikit padding biar sejajar tinggi icon
+                        )
                     }
-                    // No HP
+
+                    // Harga Total (Kanan Atas)
                     Text(
-                        text = data.phone,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f), // Changed from Color.Gray
-                        fontSize = 14.sp
+                        text = currencyFormatter(data.totalToPay),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color.Black
                     )
                 }
-
-                // Harga Total (Kanan Atas)
-                Text(
-                    text = data.total,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onPrimary // Added consistent color
-                )
             }
+        }
 
-            // Baris 2: Tombol Toggle Rincian
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { isExpanded = !isExpanded } // KLIK DI SINI
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        // BARIS 2: Tombol Toggle Rincian (Full Width, Mentok Kiri)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { isExpanded = !isExpanded }
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Rincian pesanan",
+                style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
+                fontWeight = FontWeight.Medium,
+                color = Color.Black.copy(alpha = 0.8f)
+            )
+            // Panah berubah arah
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = Color.Black.copy(alpha = 0.8f)
+            )
+        }
+
+        // BARIS 3: Area Rincian (Full Width)
+        AnimatedVisibility(visible = isExpanded) {
+            Column(
+                modifier = Modifier.padding(top = 4.dp)
             ) {
-                Text(
-                    text = "Rincian pesanan",
-                    style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f) // Added consistent color
-                )
-                // Panah berubah arah
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f) // Added consistent color
-                )
-            }
-
-            // Baris 3: Area Rincian (Hidden/Shown)
-            AnimatedVisibility(visible = isExpanded) {
-                Column(
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    data.items.forEach { item ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 2.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = item.name,
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f), // Changed from Color.Gray
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text(
-                                text = "x${item.qty}",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f), // Changed from Color.Gray
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                            Text(
-                                text = item.price,
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f) // Changed from Color.Gray
-                            )
-                        }
+                data.items.forEach { item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = item.name,
+                            fontSize = 12.sp,
+                            color = Color.Black.copy(alpha = 0.6f),
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "x${item.qty}",
+                            fontSize = 12.sp,
+                            color = Color.Black.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        Text(
+                            text = currencyFormatter(item.sharePrice),
+                            fontSize = 12.sp,
+                            color = Color.Black.copy(alpha = 0.6f)
+                        )
                     }
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(8.dp)) // Jarak antar elemen
+
     }
 }
 
-// FUNGSI UNTUK MENGHAPUS (ga dipake)
-// fun Hapus() {}
+
+// ============================================
+// KHUSUS LAYOUT CETAK (TIDAK TAMPIL DI UI UTAMA)
+// ============================================
+@Composable
+fun CaptureLayout(
+    splitBillData: SplitBillData,
+    processedMembers: List<ProcessedMember>,
+    totalBillAmount: Int,
+    transactionDate: String? = null,
+    capturedImage: ImageBitmap? = null,
+    formatCurrency: (Int) -> String,
+    graphicsLayer: androidx.compose.ui.graphics.layer.GraphicsLayer,
+    onCaptured: (ImageBitmap) -> Unit
+) {
+    // Gunakan Box yang digambar ke GraphicsLayer
+    Box(
+        modifier = Modifier
+            .width(400.dp) // Lebar fix agar hasil cetak konsisten
+            .wrapContentHeight() // Tinggi menyesuaikan konten
+            .drawWithContent {
+                graphicsLayer.record {
+                    this@drawWithContent.drawContent()
+                }
+                drawContent()
+            }
+            // Background putih solid wajib untuk hasil cetak
+            .background(Color.White) 
+            .padding(24.dp)
+    ) {
+        Column(
+            modifier = Modifier.wrapContentHeight(),
+            horizontalAlignment = Alignment.Start
+        ) {
+             // 1. Header Kiri (Split Bill Text)
+             Text("Split Bill", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+             Spacer(Modifier.height(16.dp))
+
+             // 2. Center Info (Gambar + Merchant + Total)
+             Column(
+                 modifier = Modifier.fillMaxWidth(),
+                 horizontalAlignment = Alignment.CenterHorizontally
+             ) {
+                 // Gambar Struk (Prioritaskan gambar asli, fallback ke placeholder)
+                 if (capturedImage != null) {
+                     Image(
+                         bitmap = capturedImage,
+                         contentDescription = "Gambar struk",
+                         contentScale = ContentScale.Crop,
+                         modifier = Modifier
+                             .size(80.dp)
+                             .clip(RoundedCornerShape(10.dp))
+                             .background(Color.White)
+                     )
+                 } else {
+                     Image(
+                         painter = painterResource(Res.drawable.header_rincian),
+                         contentDescription = "Gambar struk",
+                         contentScale = ContentScale.Crop,
+                         modifier = Modifier
+                             .size(80.dp)
+                             .clip(RoundedCornerShape(10.dp))
+                             .background(Color.White)
+                     )
+                 }
+                 Spacer(Modifier.height(8.dp))
+                 
+                 Text(splitBillData.merchantName, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                 Text(transactionDate ?: "-", fontSize = 14.sp, color = Color.Black.copy(alpha = 0.8f))
+                 
+                 Spacer(Modifier.height(16.dp))
+                 
+                 DashedDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                 
+                 // Total Biaya
+                 Column(
+                     modifier = Modifier.padding(vertical = 10.dp),
+                     horizontalAlignment = Alignment.CenterHorizontally
+                 ) {
+                     Text("Total Jumlah", fontSize = 14.sp, color = Color.Black.copy(alpha = 0.7f))
+                     Text(
+                        text = formatCurrency(totalBillAmount),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                     )
+                 }
+                 
+                 DashedDivider(color = Color.LightGray.copy(alpha = 0.5f))
+             }
+
+             Spacer(Modifier.height(16.dp))
+
+             // 3. Tujuan Pembayaran
+             Text("Tujuan pembayaran", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+             Spacer(Modifier.height(16.dp))
+             Wallet(splitBillData.payer)
+             
+             Spacer(Modifier.height(16.dp))
+             DashedDivider(color = Color.LightGray.copy(alpha = 0.5f))
+             Spacer(Modifier.height(16.dp))
+
+             // 4. List Anggota (Compact View)
+             Text("Anggota (${processedMembers.size})", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+             Spacer(Modifier.height(16.dp))
+
+             processedMembers.forEachIndexed { index, pm ->
+                 ItemCetakCompact(pm, formatCurrency)
+                 if (index < processedMembers.size - 1) {
+                     Spacer(Modifier.height(8.dp))
+                     DashedDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                     Spacer(Modifier.height(8.dp))
+                 }
+             }
+        }
+    }
+
+    // Trigger onCaptured setelah drawing selesai (Frame berikutnya)
+    LaunchedEffect(Unit) {
+        // Beri sedikit delay agar layout sempat ter-render
+        kotlinx.coroutines.delay(100) 
+        val bitmap = graphicsLayer.toImageBitmap()
+        onCaptured(bitmap)
+    }
+}
+
+// Item Anggota Versi Ringkas (Khusus Cetak)
+@Composable
+fun ItemCetakCompact(
+    data: ProcessedMember,
+    currencyFormatter: (Int) -> String
+) {
+    val initial = data.member.name.firstOrNull()?.uppercase() ?: "?"
+    val avatarColor = generateColorForName(data.member.name)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Avatar
+        Box(
+            modifier = Modifier.size(40.dp).clip(CircleShape).background(avatarColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(initial.toString(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        }
+        
+        Spacer(Modifier.width(12.dp))
+        
+        // Nama
+        Text(
+            data.member.name,
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            color = Color.Black,
+            modifier = Modifier.weight(1f)
+        )
+        
+        // Total
+        Text(
+            currencyFormatter(data.totalToPay),
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            color = Color.Black
+        )
+    }
+}
 
 // FUNGSI KHUSUS UNTUK MEMBUAT GARIS PUTUS-PUTUS
 @Composable
 fun DashedDivider(
     color: Color = Color.Gray,
-    thickness: Float = 2f,
+    thickness: Float = 6f,
     dashLength: Float = 10f,
     gapLength: Float = 10f,
     modifier: Modifier = Modifier
@@ -614,6 +887,44 @@ fun DashedDivider(
             end = Offset(size.width, 0f),
             strokeWidth = thickness,
             pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashLength, gapLength), 0f)
+        )
+    }
+}
+
+// Helper Generator Warna Avatar (Agar konsisten dengan nama) - Disamakan dari SplitBillScreen
+fun generateColorForName(name: String): Color {
+    val colors = listOf(
+        Color(0xFF00897B), Color(0xFF1976D2), Color(0xFFE53935),
+        Color(0xFFFB8C00), Color(0xFF8E24AA), Color(0xFF43A047)
+    )
+    if (name.isEmpty()) return colors[0]
+    return colors[name.first().uppercaseChar().code % colors.size]
+}
+
+@Preview
+@Composable
+fun DoneScreenPreview() {
+    val payer = Member(id = "1", name = "Sena", wallet = "GoPay", phoneNumber = "08123456789")
+    val member2 = Member(id = "2", name = "Budi")
+
+    val splitBillData = SplitBillData(
+        merchantName = "Warung Padang",
+        payer = payer,
+        members = listOf(member2),
+        totalMembers = 3,
+        membersWithPaymentInfo = 1
+    )
+
+    val items = listOf(
+        AssignableBillItem(id = "1", name = "Nasi Rendang", price = 25000, qty = 1, assignedMemberIds = listOf("1")),
+        AssignableBillItem(id = "2", name = "Es Teh Manis", price = 5000, qty = 3, assignedMemberIds = listOf("1", "2", "3")),
+        AssignableBillItem(id = "3", name = "Kerupuk Kulit", price = 10000, qty = 1, assignedMemberIds = listOf("2"))
+    )
+
+    MaterialTheme {
+        DoneScreen(
+            splitBillData = splitBillData,
+            assignedItems = items
         )
     }
 }
