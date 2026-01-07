@@ -15,6 +15,7 @@ import com.bagi_bill.bagi_bill.ui.screens.rincian.UbahRincianScreen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.bagi_bill.bagi_bill.utils.getCurrentFormattedDateTime
 
 /**
  * ========================================================================
@@ -273,39 +274,8 @@ fun AppNavigator(
                     onSendClick = { items ->
                         sharedViewModel.setAssignedItems(items)
                         
-                        // Capture current time (UTC+7 / WIB)
-                        val currentMillis = System.currentTimeMillis()
-                        val utcPlus7Offset = 7 * 60 * 60 * 1000L // 7 hours in millis
-                        val localMillis = currentMillis + utcPlus7Offset
-                        
-                        val totalSeconds = localMillis / 1000
-                        val totalMinutes = totalSeconds / 60
-                        val totalHours = totalMinutes / 60
-                        val totalDays = totalHours / 24
-                        
-                        val hour = ((totalHours % 24).toInt())
-                        val minute = ((totalMinutes % 60).toInt())
-                        
-                        // Simple date calculation from epoch (1970-01-01)
-                        var remainingDays = totalDays.toInt()
-                        var year = 1970
-                        while (true) {
-                            val daysInYear = if ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0) 366 else 365
-                            if (remainingDays < daysInYear) break
-                            remainingDays -= daysInYear
-                            year++
-                        }
-                        val isLeap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
-                        val daysInMonths = listOf(31, if (isLeap) 29 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
-                        var month = 1
-                        for (d in daysInMonths) {
-                            if (remainingDays < d) break
-                            remainingDays -= d
-                            month++
-                        }
-                        val day = remainingDays + 1
-                        
-                        val formattedDate = "${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/$year - ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+                        // Capture current time (UTC+7 / WIB) using platform-specific implementation
+                        val formattedDate = getCurrentFormattedDateTime()
                         sharedViewModel.setTransactionDate(formattedDate)
 
                         navController.navigate(Routes.DONE)

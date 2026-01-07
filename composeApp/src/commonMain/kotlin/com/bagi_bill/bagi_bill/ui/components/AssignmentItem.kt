@@ -185,7 +185,7 @@ fun AssignmentBillItemRow(
 }
 
 // PREVIEW
-@Preview(showBackground = true)
+@Preview
 @Composable
 fun AssignmentItem3RowsPreview() {
     val dummyMembers = listOf(

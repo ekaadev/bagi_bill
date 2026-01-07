@@ -1,6 +1,6 @@
 package com.bagi_bill.bagi_bill
 
-import androidx.activity.compose.BackHandler
+// import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -79,7 +79,7 @@ fun PreviewScreen(
     val imageBitmap = rememberBitmapFromBytes(photoBytes)
 
     // Handle System Back Button
-    BackHandler(onBack = onRetake)
+    // BackHandler(onBack = onRetake)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),

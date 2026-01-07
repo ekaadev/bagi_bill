@@ -191,7 +191,7 @@ fun SplitEvenlyButton(
 }
 
 // Preview untuk memastikan padding dan garis terlihat pas
-@Preview(showBackground = true)
+@Preview
 @Composable
 fun MemberComponentsPreview() {
     val dummyMembers = listOf(
