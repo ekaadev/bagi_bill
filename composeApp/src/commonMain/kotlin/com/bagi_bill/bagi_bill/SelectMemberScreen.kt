@@ -68,96 +68,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.random.Random
-
-/**
- * DATA CLASS: Member
- * ==================
- * Menyimpan informasi anggota yang ikut dalam split bill.
- *
- * PROPERTIES:
- * - id: String              -> Unique ID (auto-generated)
- * - name: String            -> Nama anggota (REQUIRED)
- * - wallet: String?         -> E-Wallet yang digunakan (OPTIONAL)
- * - phoneNumber: String?    -> Nomor tujuan pembayaran (OPTIONAL)
- *
- * ATURAN:
- * - Nama wajib diisi
- * - Wallet dan phone number optional
- * - Member bisa jadi payer hanya jika punya wallet DAN phone number
- * - Member tanpa wallet/phone hanya bisa jadi anggota biasa
- */
-data class Member(
-    val id: String = Random.nextInt(100000, 999999).toString(),
-    val name: String,
-    val wallet: String? = null,
-    val phoneNumber: String? = null
-) {
-    // Helper function untuk cek apakah member bisa jadi payer
-    fun canBePayer(): Boolean = !wallet.isNullOrBlank() && !phoneNumber.isNullOrBlank()
-}
-
-/**
- * DATA CLASS: SplitBillData
- * =========================
- * Payload yang siap dikirim ke Split Bill Screen.
- * Berisi semua data yang dibutuhkan untuk split bill.
- *
- * PROPERTIES:
- * - payer: Member                     -> Yang nalangin (WAJIB punya wallet & phone)
- * - members: List<Member>             -> Anggota lainnya
- * - totalMembers: Int                 -> Total semua member (payer + members)
- * - membersWithPaymentInfo: Int       -> Jumlah member dengan wallet & phone
- *
- * FACTORY METHOD:
- * SplitBillData.create(payer, members) -> Otomatis hitung totalMembers & membersWithPaymentInfo
- *
- * HELPER FUNCTIONS:
- * - getAllMembers()       -> List semua member termasuk payer
- * - getEligiblePayers()   -> List member yang bisa jadi payer
- * - isValid()             -> Validasi data (minimal 2 member, payer valid)
- *
- * CONTOH:
- * val data = SplitBillData.create(
- *     payer = Member("Sena", "GoPay", "081234567890"),
- *     members = listOf(
- *         Member("Budi", "OVO", "082345678901"),
- *         Member("Ani", null, null)
- *     )
- * )
- * // data.totalMembers = 3
- * // data.membersWithPaymentInfo = 2
- */
-data class SplitBillData(
-    val payer: Member,                    // Member yang nalangin
-    val members: List<Member>,            // List anggota lainnya
-    val totalMembers: Int,                // Total semua member (payer + members)
-    val membersWithPaymentInfo: Int       // Jumlah member yang punya wallet & phone number
-) {
-    companion object {
-        fun create(payer: Member, members: List<Member>): SplitBillData {
-            val allMembers = listOf(payer) + members
-            val withPaymentInfo = allMembers.count { it.canBePayer() }
-
-            return SplitBillData(
-                payer = payer,
-                members = members,
-                totalMembers = allMembers.size,
-                membersWithPaymentInfo = withPaymentInfo
-            )
-        }
-    }
-
-    // Helper untuk mendapatkan semua member (termasuk payer)
-    fun getAllMembers(): List<Member> = listOf(payer) + members
-
-    // Helper untuk mendapatkan member yang eligible untuk jadi payer
-    fun getEligiblePayers(): List<Member> = getAllMembers().filter { it.canBePayer() }
-
-    // Validate data sebelum dikirim
-    fun isValid(): Boolean {
-        return payer.canBePayer() && totalMembers >= 2 // Minimal payer + 1 member
-    }
-}
+import com.bagi_bill.bagi_bill.model.Member
+import com.bagi_bill.bagi_bill.model.SplitBillData
 
 // List wallet yang sering digunakan di Indonesia
 val indonesianWallets = listOf(
@@ -229,6 +141,7 @@ val indonesianWallets = listOf(
 @Preview
 @Composable
 fun SelectMemberScreen(
+    merchantName: String = "Toko",
     initialData: SplitBillData? = null,
     onBack: () -> Unit = {},
     onNavigateToSplitBill: (SplitBillData) -> Unit = { }
@@ -332,6 +245,7 @@ fun SelectMemberScreen(
                     // - membersWithPaymentInfo: Member dengan wallet & phone
 
                     val splitBillData = SplitBillData.create(
+                        merchantName = merchantName,
                         payer = payerMember,
                         members = members.toList()
                     )

@@ -195,8 +195,8 @@ fun SplitEvenlyButton(
 @Composable
 fun MemberComponentsPreview() {
     val dummyMembers = listOf(
-        Member("1", "Kamu", "K", Color(0xFF4CAF50)),
-        Member("2", "Albert", "A", Color(0xFF2196F3))
+        Member("1", "Kamu", "K"),
+        Member("2", "Albert", "A")
     )
     Column {
         MemberHeaderTitle {}

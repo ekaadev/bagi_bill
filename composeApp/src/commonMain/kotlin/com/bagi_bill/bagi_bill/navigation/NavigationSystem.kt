@@ -7,6 +7,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.bagi_bill.bagi_bill.*
+import com.bagi_bill.bagi_bill.model.SplitBillData
+import com.bagi_bill.bagi_bill.model.AssignableBillItem
 import com.bagi_bill.bagi_bill.ui.screens.PembagianBillScreen
 import com.bagi_bill.bagi_bill.ui.screens.rincian.RincianScreen
 import com.bagi_bill.bagi_bill.ui.screens.rincian.UbahRincianScreen
@@ -39,6 +41,12 @@ class SharedViewModel : ViewModel() {
     private val _splitBillData = MutableStateFlow<SplitBillData?>(null)
     val splitBillData = _splitBillData.asStateFlow()
 
+    private val _assignedItems = MutableStateFlow<List<AssignableBillItem>>(emptyList())
+    val assignedItems = _assignedItems.asStateFlow()
+
+    private val _transactionDate = MutableStateFlow<String>("")
+    val transactionDate = _transactionDate.asStateFlow()
+
     fun setParsedReceipt(receipt: ParsedReceipt) {
         _parsedReceipt.value = receipt
     }
@@ -51,10 +59,20 @@ class SharedViewModel : ViewModel() {
         _splitBillData.value = data
     }
 
+    fun setAssignedItems(items: List<AssignableBillItem>) {
+        _assignedItems.value = items
+    }
+
+    fun setTransactionDate(date: String) {
+        _transactionDate.value = date
+    }
+
     fun clearData() {
         _parsedReceipt.value = null
         _imageBytes.value = null
         _splitBillData.value = null
+        _assignedItems.value = emptyList()
+        _transactionDate.value = ""
     }
 }
 
@@ -211,7 +229,10 @@ fun AppNavigator(
         // ===== SELECT MEMBER SCREEN =====
         composable(Routes.SELECT_MEMBER) {
             val existingData by sharedViewModel.splitBillData.collectAsState()
+            val parsedReceipt by sharedViewModel.parsedReceipt.collectAsState()
+
             SelectMemberScreen(
+                merchantName = parsedReceipt?.name ?: "Toko",
                 initialData = existingData,
                 onBack = {
                     // Kembali ke Rincian screen
@@ -249,15 +270,88 @@ fun AppNavigator(
                     parsedReceipt = parsedReceipt!!,
                     onBackClick = { navController.popBackStack() },
                     onEditMembers = { navController.popBackStack() },
-                    onSendClick = {
-                        // TODO: Implement logic kirim ke API/WhatsApp di sini
-                        println("Kirim data pembagian bill...")
-                        // navController.navigate(Routes.DONE)
+                    onSendClick = { items ->
+                        sharedViewModel.setAssignedItems(items)
+                        
+                        // Capture current time (UTC+7 / WIB)
+                        val currentMillis = System.currentTimeMillis()
+                        val utcPlus7Offset = 7 * 60 * 60 * 1000L // 7 hours in millis
+                        val localMillis = currentMillis + utcPlus7Offset
+                        
+                        val totalSeconds = localMillis / 1000
+                        val totalMinutes = totalSeconds / 60
+                        val totalHours = totalMinutes / 60
+                        val totalDays = totalHours / 24
+                        
+                        val hour = ((totalHours % 24).toInt())
+                        val minute = ((totalMinutes % 60).toInt())
+                        
+                        // Simple date calculation from epoch (1970-01-01)
+                        var remainingDays = totalDays.toInt()
+                        var year = 1970
+                        while (true) {
+                            val daysInYear = if ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0) 366 else 365
+                            if (remainingDays < daysInYear) break
+                            remainingDays -= daysInYear
+                            year++
+                        }
+                        val isLeap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
+                        val daysInMonths = listOf(31, if (isLeap) 29 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+                        var month = 1
+                        for (d in daysInMonths) {
+                            if (remainingDays < d) break
+                            remainingDays -= d
+                            month++
+                        }
+                        val day = remainingDays + 1
+                        
+                        val formattedDate = "${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/$year - ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+                        sharedViewModel.setTransactionDate(formattedDate)
+
+                        navController.navigate(Routes.DONE)
                     }
                 )
             } else {
                 // Fallback jika data hilang (misal process death), balik ke Home
                 LaunchedEffect(Unit) {
+                    navController.navigate(Routes.HOME) { popUpTo(Routes.HOME) { inclusive = true } }
+                }
+            }
+        }
+
+        // ===== DONE SCREEN =====
+        composable(Routes.DONE) {
+            val splitBillData by sharedViewModel.splitBillData.collectAsState()
+            val assignedItems by sharedViewModel.assignedItems.collectAsState()
+            val imageBytes by sharedViewModel.imageBytes.collectAsState()
+            val transactionDate by sharedViewModel.transactionDate.collectAsState()
+
+            if (splitBillData != null && assignedItems.isNotEmpty()) {
+                DoneScreen(
+                    splitBillData = splitBillData!!,
+                    assignedItems = assignedItems,
+                    imageBytes = imageBytes,
+                    transactionDate = transactionDate,
+                    onNavigateToRincian = {
+                        // Kembali ke Rincian untuk edit data awal (ParsedReceipt)
+                        // Pop stack sampai Rincian (atau navigate clear top?)
+                        // User menginginkan "Back" -> Home, tapi ini tombol edit spesifik "Pensil"
+                        // Navigate ke RINCIAN dan clear stack di atasnya
+                        navController.navigate(Routes.RINCIAN) {
+                            popUpTo(Routes.RINCIAN) { inclusive = true }
+                        }
+                    },
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onGoHome = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.HOME) { inclusive = true }
+                        }
+                    }
+                )
+            } else {
+                 LaunchedEffect(Unit) {
                     navController.navigate(Routes.HOME) { popUpTo(Routes.HOME) { inclusive = true } }
                 }
             }
