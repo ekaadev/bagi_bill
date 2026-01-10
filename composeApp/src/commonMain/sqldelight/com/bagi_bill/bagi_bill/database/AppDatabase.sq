@@ -1,0 +1,102 @@
+-- Table for storing split bills
+CREATE TABLE IF NOT EXISTS Bill (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    total_amount INTEGER NOT NULL,
+    created_date INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'UNPAID',
+    is_draft INTEGER NOT NULL DEFAULT 0,
+    bill_type TEXT NOT NULL DEFAULT 'MANUAL'
+);
+
+-- Table for storing user profile (app owner)
+CREATE TABLE IF NOT EXISTS UserProfile (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    name TEXT NOT NULL,
+    wallet_number TEXT,
+    wallet_type TEXT
+);
+
+-- Table for storing members in each split bill
+CREATE TABLE IF NOT EXISTS Member (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bill_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    wallet_number TEXT,
+    wallet_type TEXT,
+    amount INTEGER NOT NULL,
+    is_paid INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (bill_id) REFERENCES Bill(id) ON DELETE CASCADE
+);
+
+-- Queries for Bill table
+insertBill:
+INSERT INTO Bill(name, total_amount, created_date, status, is_draft, bill_type)
+VALUES (?, ?, ?, ?, ?, ?);
+
+updateBill:
+UPDATE Bill
+SET name = ?, total_amount = ?, status = ?, is_draft = ?
+WHERE id = ?;
+
+deleteBill:
+DELETE FROM Bill WHERE id = ?;
+
+getBillById:
+SELECT * FROM Bill WHERE id = ?;
+
+getAllBills:
+SELECT * FROM Bill ORDER BY created_date DESC;
+
+getBillsByStatus:
+SELECT * FROM Bill WHERE status = ? ORDER BY created_date DESC;
+
+getBillsByDateRange:
+SELECT * FROM Bill WHERE created_date >= ? AND created_date <= ? ORDER BY created_date DESC;
+
+getDraftBills:
+SELECT * FROM Bill WHERE is_draft = 1 ORDER BY created_date DESC;
+
+getRecentBills:
+SELECT * FROM Bill WHERE is_draft = 0 ORDER BY created_date DESC LIMIT ?;
+
+countDraftBills:
+SELECT COUNT(*) FROM Bill WHERE is_draft = 1;
+
+getLastInsertedBillId:
+SELECT last_insert_rowid();
+
+-- Queries for Member table
+insertMember:
+INSERT INTO Member(bill_id, name, wallet_number, wallet_type, amount, is_paid)
+VALUES (?, ?, ?, ?, ?, ?);
+
+updateMember:
+UPDATE Member
+SET name = ?, wallet_number = ?, wallet_type = ?, amount = ?, is_paid = ?
+WHERE id = ?;
+
+deleteMember:
+DELETE FROM Member WHERE id = ?;
+
+getMemberById:
+SELECT * FROM Member WHERE id = ?;
+
+getMembersByBillId:
+SELECT * FROM Member WHERE bill_id = ? ORDER BY id;
+
+updateMemberPaymentStatus:
+UPDATE Member
+SET is_paid = ?
+WHERE id = ?;
+
+deleteMembersByBillId:
+DELETE FROM Member WHERE bill_id = ?;
+
+-- Queries for UserProfile table
+insertOrUpdateUserProfile:
+INSERT OR REPLACE INTO UserProfile(id, name, wallet_number, wallet_type)
+VALUES (1, ?, ?, ?);
+
+getUserProfile:
+SELECT * FROM UserProfile WHERE id = 1;
