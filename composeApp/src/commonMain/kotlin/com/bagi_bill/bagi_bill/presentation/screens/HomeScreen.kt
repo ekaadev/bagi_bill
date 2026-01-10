@@ -1,0 +1,657 @@
+package com.bagi_bill.bagi_bill.presentation.screens
+
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bagi_bill.bagi_bill.domain.model.Bill
+import com.bagi_bill.bagi_bill.domain.model.BillType
+import com.bagi_bill.bagi_bill.presentation.viewmodel.HomeViewModel
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.koin.compose.viewmodel.koinViewModel
+import com.bagi_bill.bagi_bill.presentation.viewmodel.HomeUiState
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(
+    onNavigateToCamera: () -> Unit = {},
+    viewModel: HomeViewModel = koinViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    HomeScreenContent(
+        uiState = uiState,
+        onNavigateToCamera = onNavigateToCamera
+    )
+}
+
+@Composable
+fun WalletSection(
+    onNavigateToWallet: () -> Unit = {}
+) {
+    // Container Wallet Section
+    Card(
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        // Container Column di dalam Card
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            // Row, sebagai card header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Dompet kamu",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+
+            }
+
+            // Spacer
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Section content card (atur wallet sendiri
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+                color = Color.Transparent,
+                onClick = onNavigateToWallet
+            ) {
+                // Icon(kiri) + Text(title, description) (kanan)
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Wallet,
+                        contentDescription = "Wallet",
+                        modifier = Modifier
+                            .border(1.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(50))
+                            .padding(8.dp)
+                            .size(24.dp)
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(35))
+                            .padding(4.dp),
+                        tint = Color.White
+                    )
+
+                    // spacer
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    // text container
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Atur walletmu sendiri",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = "Buat wallet untuk simpan dana patungan biar lebih praktis.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+
+                    // spacer
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Wallet",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CreateNewSplitBillSection(
+    onNavigateToManual: () -> Unit = {},
+    onNavigateToScan: () -> Unit = {}
+) {
+    Card(
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Bikin baru",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Pilih cara yang kamu mau",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Normal
+                )
+            }
+
+            // Spacer
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Section content card (atur jumlah sendiri)
+            OptionCreateSplitBill(
+                onNavigate = onNavigateToManual,
+                icon = Icons.Filled.CallSplit,
+                title = "Atur jumlah sendiri",
+                description = "Kamu yang atur pembagian dan jumlahnya."
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Section content card (scan struk)
+            OptionCreateSplitBill(
+                onNavigate = onNavigateToScan,
+                icon = Icons.Filled.CameraAlt,
+                title = "Hitung otomatis pake struk",
+                description = "Foto struk atau ambil dari galeri biar nanti bisa kami bantu itungin."
+            )
+        }
+    }
+}
+
+@Composable
+fun OptionCreateSplitBill(
+    onNavigate: () -> Unit,
+    icon: ImageVector,
+    title: String,
+    description: String
+) {
+    // Container Option Create Split Bill
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+        color = Color.Transparent,
+        onClick = onNavigate
+    ) {
+        // Icon(kiri) + Text(title, description) (kanan)
+        Row(
+            modifier = Modifier
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Icon
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier
+                    .border(1.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(50))
+                    .padding(8.dp)
+                    .size(24.dp)
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(35))
+                    .padding(4.dp),
+                tint = Color.White
+            )
+
+            // Spacer
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Text container
+            Column(
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.weight(1f)
+            ) {
+                // Title
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // Description
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Normal
+                )
+            }
+
+            // spacer
+            Spacer(modifier = Modifier.width(4.dp))
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun HistorySection(
+    bills: List<Bill> = emptyList(),
+    onBillClick: (Long) -> Unit = {},
+    onNavigateToHistory: () -> Unit = {}
+) {
+    Card(
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        // Container dalam Card (paling awal)
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            // Title card
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Yang terakhir kamu buat",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // Spacer
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Section content card
+            ListHistorySplitBill(
+                bills = bills,
+                onBillClick = onBillClick,
+                onNavigateToHistory = onNavigateToHistory
+            )
+        }
+    }
+}
+
+@Composable
+fun ListHistorySplitBill(
+    bills: List<Bill> = emptyList(),
+    onBillClick: (Long) -> Unit = {},
+    onNavigateToHistory: () -> Unit = {}
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Tampilkan list bills
+        if (bills.isEmpty()) {
+            // Empty state
+            Text(
+                text = "Belum ada riwayat split bill",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray,
+                modifier = Modifier.padding(vertical = 16.dp)
+            )
+        } else {
+            bills.forEach { bill ->
+                BillHistoryItem(
+                    bill = bill,
+                    onClick = { onBillClick(bill.id) }
+                )
+            }
+        }
+
+        // Spacer
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // lihat selengkapnya
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(),
+            color = Color.Transparent,
+            shape = RoundedCornerShape(50.dp),
+            border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+            onClick = onNavigateToHistory
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(vertical = 10.dp, horizontal = 16.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Lihat riwayat selengkapnya",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = "Lihat riwayat selengkapnya",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun BillHistoryItem(
+    bill: Bill,
+    onClick: () -> Unit = {}
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth(),
+        color = Color.Transparent,
+        shape = RoundedCornerShape(16.dp),
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(vertical = 10.dp, horizontal = 8.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Icon berdasarkan bill type
+            val icon = when (bill.billType) {
+                BillType.SCAN -> Icons.Filled.CameraAlt
+                BillType.MANUAL -> Icons.Filled.CallSplit
+            }
+
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(50))
+                    .padding(8.dp)
+                    .size(20.dp)
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(35))
+                    .padding(4.dp),
+                tint = Color.White
+            )
+
+            // spacer
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Text Container
+            Column(
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(1f)
+            ) {
+                Text(
+                    text = bill.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // price
+            Text(
+                text = formatRupiah(bill.totalAmount),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.DarkGray,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+// Helper function untuk format Rupiah
+fun formatRupiah(amount: Long): String {
+    val amountStr = amount.toString()
+    val reversed = amountStr.reversed()
+    val grouped = reversed.chunked(3).joinToString(".")
+    return "Rp${grouped.reversed()}"
+}
+
+// Preview function tanpa Koin untuk preview mode
+@Preview
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreenPreview() {
+    MaterialTheme {
+        HomeScreenContent(
+            uiState = HomeUiState(
+                recentBills = emptyList(),
+                draftCount = 0
+            )
+        )
+    }
+}
+
+// Extracted content untuk reusability
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun HomeScreenContent(
+    uiState: HomeUiState,
+    onNavigateToCamera: () -> Unit = {}
+) {
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            TopAppBar(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background
+                ),
+                navigationIcon = {},
+                title = {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp, horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Bagi Bill",
+                            color = Color.Black,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+
+                        Surface(
+                            onClick = {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Fitur Draft belum tersedia")
+                                }
+                            },
+                            shape = CircleShape,
+                            color = Color.White,
+                            shadowElevation = 2.dp,
+                            tonalElevation = 4.dp
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = "Draft ",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Black
+                                )
+                                Text(
+                                    text = "(${uiState.draftCount})",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Fungsi Bantuan belum tersedia")
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Filled.Help,
+                            contentDescription = "Bantuan",
+                            tint = Color.Gray
+                        )
+                    }
+                },
+                scrollBehavior = scrollBehavior
+            )
+        },
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 100.dp)
+            ) {
+                WalletSection(
+                    onNavigateToWallet = {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Fitur Wallet belum tersedia")
+                        }
+                    }
+                )
+
+                CreateNewSplitBillSection(
+                    onNavigateToManual = {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Fitur Manual Input belum tersedia")
+                        }
+                    },
+                    onNavigateToScan = onNavigateToCamera
+                )
+
+                HistorySection(
+                    bills = uiState.recentBills,
+                    onBillClick = { _ ->
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Detail Bill belum tersedia")
+                        }
+                    },
+                    onNavigateToHistory = {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Fitur History belum tersedia")
+                        }
+                    }
+                )
+            }
+
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+                color = Color.White,
+                shadowElevation = 32.dp,
+                tonalElevation = 0.dp,
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(
+                            start = 16.dp,
+                            end = 16.dp,
+                            top = 24.dp,
+                            bottom = 24.dp
+                        )
+                ) {
+                    Button(
+                        onClick = onNavigateToCamera,
+                        modifier = Modifier.fillMaxWidth().height(43.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Text(
+                            text = "Scan Sekarang",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
