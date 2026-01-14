@@ -18,24 +18,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bagi_bill.bagi_bill.domain.model.Bill
-import com.bagi_bill.bagi_bill.domain.model.BillType
 import com.bagi_bill.bagi_bill.presentation.viewmodel.HomeViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 import com.bagi_bill.bagi_bill.presentation.viewmodel.HomeUiState
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToCamera: () -> Unit = {},
+    onNavigateToHistory: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     HomeScreenContent(
         uiState = uiState,
-        onNavigateToCamera = onNavigateToCamera
+        onNavigateToCamera = onNavigateToCamera,
+        onNavigateToHistory = onNavigateToHistory
     )
 }
 
@@ -50,9 +52,6 @@ fun WalletSection(
             .fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
         ),
         shape = RoundedCornerShape(16.dp),
     ) {
@@ -157,9 +156,6 @@ fun CreateNewSplitBillSection(
             .fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -299,9 +295,6 @@ fun HistorySection(
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        ),
         shape = RoundedCornerShape(16.dp)
     ) {
         // Container dalam Card (paling awal)
@@ -346,9 +339,7 @@ fun ListHistorySplitBill(
             .fillMaxWidth(),
         verticalArrangement = Arrangement.Center
     ) {
-        // Tampilkan list bills
         if (bills.isEmpty()) {
-            // Empty state
             Text(
                 text = "Belum ada riwayat split bill",
                 style = MaterialTheme.typography.bodyMedium,
@@ -356,18 +347,32 @@ fun ListHistorySplitBill(
                 modifier = Modifier.padding(vertical = 16.dp)
             )
         } else {
-            bills.forEach { bill ->
-                BillHistoryItem(
-                    bill = bill,
-                    onClick = { onBillClick(bill.id) }
-                )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.1f))
+            ) {
+                bills.forEachIndexed { index, bill ->
+                    BillHistoryItem(
+                        bill = bill,
+                        onClick = { onBillClick(bill.id) }
+                    )
+
+                    if (index < bills.size - 1) {
+                        HorizontalDivider(
+                            color = Color.Gray.copy(alpha = 0.1f),
+                            thickness = 0.5.dp
+                        )
+                    }
+                }
             }
         }
 
-        // Spacer
         Spacer(modifier = Modifier.height(12.dp))
 
-        // lihat selengkapnya
         Surface(
             modifier = Modifier
                 .fillMaxWidth(),
@@ -390,7 +395,7 @@ fun ListHistorySplitBill(
                 )
 
                 Icon(
-                    imageVector = Icons.Default.ArrowForward,
+                    imageVector = Icons.Filled.ArrowForward,
                     contentDescription = "Lihat riwayat selengkapnya",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(16.dp)
@@ -414,18 +419,12 @@ fun BillHistoryItem(
     ) {
         Row(
             modifier = Modifier
-                .padding(vertical = 10.dp, horizontal = 8.dp)
+                .padding(16.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon berdasarkan bill type
-            val icon = when (bill.billType) {
-                BillType.SCAN -> Icons.Filled.CameraAlt
-                BillType.MANUAL -> Icons.Filled.CallSplit
-            }
-
             Icon(
-                imageVector = icon,
+                imageVector = Icons.Filled.CallSplit,
                 contentDescription = null,
                 modifier = Modifier
                     .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(50))
@@ -436,41 +435,95 @@ fun BillHistoryItem(
                 tint = Color.White
             )
 
-            // spacer
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
-            // Text Container
             Column(
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(1f)
+                modifier = Modifier.weight(1f)
             ) {
                 Text(
                     text = bill.name,
                     style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
                     color = Color.Black,
-                    fontWeight = FontWeight.Medium
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = formatParticipantsList(bill.members.map { it.name }, maxVisible = 2),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
-            // price
-            Text(
-                text = formatRupiah(bill.totalAmount),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.DarkGray,
-                fontWeight = FontWeight.SemiBold
-            )
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = formatRupiah(bill.totalAmount),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                val paidCount = bill.members.count { it.isPaid }
+                val totalCount = bill.members.size
+                val statusColor = when {
+                    paidCount == totalCount -> Color(0xFF4CAF50)
+                    paidCount > 0 -> Color(0xFFFF9800)
+                    else -> Color(0xFFF44336)
+                }
+                val statusIcon = when {
+                    paidCount == totalCount -> Icons.Filled.CheckCircle
+                    else -> Icons.Filled.AccessTime
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "$paidCount dari $totalCount udah bayar",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = statusColor
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = statusIcon,
+                        contentDescription = null,
+                        tint = statusColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
         }
     }
 }
 
 // Helper function untuk format Rupiah
-fun formatRupiah(amount: Long): String {
+private fun formatRupiah(amount: Long): String {
     val amountStr = amount.toString()
     val reversed = amountStr.reversed()
     val grouped = reversed.chunked(3).joinToString(".")
     return "Rp${grouped.reversed()}"
+}
+
+// Helper function untuk format participants
+private fun formatParticipantsList(participants: List<String>, maxVisible: Int = 2): String {
+    return when {
+        participants.isEmpty() -> "Tidak ada peserta"
+        participants.size <= maxVisible -> participants.joinToString(" and ")
+        else -> {
+            val visible = participants.take(maxVisible).joinToString(", ")
+            val remaining = participants.size - maxVisible
+            "$visible and $remaining other${if (remaining > 1) "s" else ""}"
+        }
+    }
 }
 
 // Preview function tanpa Koin untuk preview mode
@@ -493,7 +546,8 @@ fun HomeScreenPreview() {
 @Composable
 internal fun HomeScreenContent(
     uiState: HomeUiState,
-    onNavigateToCamera: () -> Unit = {}
+    onNavigateToCamera: () -> Unit = {},
+    onNavigateToHistory: () -> Unit = {}
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -506,7 +560,6 @@ internal fun HomeScreenContent(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                modifier = Modifier.padding(horizontal = 8.dp),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = MaterialTheme.colorScheme.background
@@ -515,8 +568,7 @@ internal fun HomeScreenContent(
                 title = {
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp, horizontal = 12.dp),
+                            .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -607,11 +659,7 @@ internal fun HomeScreenContent(
                             snackbarHostState.showSnackbar("Detail Bill belum tersedia")
                         }
                     },
-                    onNavigateToHistory = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Fitur History belum tersedia")
-                        }
-                    }
+                    onNavigateToHistory = onNavigateToHistory
                 )
             }
 
