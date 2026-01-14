@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bagi_bill.bagi_bill.domain.model.Bill
 import com.bagi_bill.bagi_bill.presentation.viewmodel.HomeViewModel
+import com.bagi_bill.bagi_bill.getPlatform
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
@@ -33,11 +34,13 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val platform = remember { getPlatform() }
 
     HomeScreenContent(
         uiState = uiState,
         onNavigateToCamera = onNavigateToCamera,
-        onNavigateToHistory = onNavigateToHistory
+        onNavigateToHistory = onNavigateToHistory,
+        isWeb = platform.isWeb
     )
 }
 
@@ -148,7 +151,8 @@ fun WalletSection(
 @Composable
 fun CreateNewSplitBillSection(
     onNavigateToManual: () -> Unit = {},
-    onNavigateToScan: () -> Unit = {}
+    onNavigateToScan: () -> Unit = {},
+    isWeb: Boolean = false
 ) {
     Card(
         modifier = Modifier
@@ -196,12 +200,16 @@ fun CreateNewSplitBillSection(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Section content card (scan struk)
             OptionCreateSplitBill(
                 onNavigate = onNavigateToScan,
                 icon = Icons.Filled.CameraAlt,
                 title = "Hitung otomatis pake struk",
-                description = "Foto struk atau ambil dari galeri biar nanti bisa kami bantu itungin."
+                description = if (isWeb) {
+                    "Fitur ini hanya tersedia di aplikasi mobile"
+                } else {
+                    "Foto struk atau ambil dari galeri biar nanti bisa kami bantu itungin."
+                },
+                enabled = !isWeb
             )
         }
     }
@@ -212,24 +220,23 @@ fun OptionCreateSplitBill(
     onNavigate: () -> Unit,
     icon: ImageVector,
     title: String,
-    description: String
+    description: String,
+    enabled: Boolean = true
 ) {
-    // Container Option Create Split Bill
     Surface(
         modifier = Modifier
             .fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+        border = BorderStroke(1.dp, Color.Gray.copy(alpha = if (enabled) 0.3f else 0.1f)),
         color = Color.Transparent,
-        onClick = onNavigate
+        onClick = if (enabled) onNavigate else { {} },
+        enabled = enabled
     ) {
-        // Icon(kiri) + Text(title, description) (kanan)
         Row(
             modifier = Modifier
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon
             Icon(
                 imageVector = icon,
                 contentDescription = null,
@@ -237,45 +244,43 @@ fun OptionCreateSplitBill(
                     .border(1.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(50))
                     .padding(8.dp)
                     .size(24.dp)
-                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(35))
+                    .background(
+                        MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 1f else 0.5f),
+                        RoundedCornerShape(35)
+                    )
                     .padding(4.dp),
                 tint = Color.White
             )
 
-            // Spacer
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Text container
             Column(
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.weight(1f)
             ) {
-                // Title
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black,
+                    color = if (enabled) Color.Black else Color.Gray,
                     fontWeight = FontWeight.Medium
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                // Description
                 Text(
                     text = description,
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Black,
+                    color = if (enabled) Color.Black else Color.Gray,
                     fontWeight = FontWeight.Normal
                 )
             }
 
-            // spacer
             Spacer(modifier = Modifier.width(4.dp))
 
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = if (enabled) MaterialTheme.colorScheme.primary else Color.Gray,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -547,7 +552,8 @@ fun HomeScreenPreview() {
 internal fun HomeScreenContent(
     uiState: HomeUiState,
     onNavigateToCamera: () -> Unit = {},
-    onNavigateToHistory: () -> Unit = {}
+    onNavigateToHistory: () -> Unit = {},
+    isWeb: Boolean = false
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -627,74 +633,102 @@ internal fun HomeScreenContent(
         Box(
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize()
+                .fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(bottom = 100.dp)
-            ) {
-                WalletSection(
-                    onNavigateToWallet = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Fitur Wallet belum tersedia")
-                        }
-                    }
-                )
-
-                CreateNewSplitBillSection(
-                    onNavigateToManual = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Fitur Manual Input belum tersedia")
-                        }
-                    },
-                    onNavigateToScan = onNavigateToCamera
-                )
-
-                HistorySection(
-                    bills = uiState.recentBills,
-                    onBillClick = { _ ->
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Detail Bill belum tersedia")
-                        }
-                    },
-                    onNavigateToHistory = onNavigateToHistory
-                )
-            }
-
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth(),
-                color = Color.White,
-                shadowElevation = 32.dp,
-                tonalElevation = 0.dp,
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+            Box(
+                modifier = if (isWeb) {
+                    Modifier
+                        .widthIn(max = 800.dp)
+                        .fillMaxHeight()
+                } else {
+                    Modifier.fillMaxSize()
+                }
             ) {
                 Column(
                     modifier = Modifier
-                        .padding(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = 24.dp,
-                            bottom = 24.dp
-                        )
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 100.dp)
                 ) {
-                    Button(
-                        onClick = onNavigateToCamera,
-                        modifier = Modifier.fillMaxWidth().height(43.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(50)
+                    WalletSection(
+                        onNavigateToWallet = {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Fitur Wallet belum tersedia")
+                            }
+                        }
+                    )
+
+                    CreateNewSplitBillSection(
+                        onNavigateToManual = {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Fitur Manual Input belum tersedia")
+                            }
+                        },
+                        onNavigateToScan = {
+                            if (isWeb) {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Fitur Scan OCR hanya tersedia di aplikasi mobile")
+                                }
+                            } else {
+                                onNavigateToCamera()
+                            }
+                        },
+                        isWeb = isWeb
+                    )
+
+                    HistorySection(
+                        bills = uiState.recentBills,
+                        onBillClick = { _ ->
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Detail Bill belum tersedia")
+                            }
+                        },
+                        onNavigateToHistory = onNavigateToHistory
+                    )
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth(),
+                    color = Color.White,
+                    shadowElevation = 32.dp,
+                    tonalElevation = 0.dp,
+                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 24.dp,
+                                bottom = 24.dp
+                            )
                     ) {
-                        Text(
-                            text = "Scan Sekarang",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        Button(
+                            onClick = {
+                                if (isWeb) {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("Fitur Scan OCR hanya tersedia di aplikasi mobile")
+                                    }
+                                } else {
+                                    onNavigateToCamera()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(43.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(50)
+                        ) {
+                            Text(
+                                text = "Scan Sekarang",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }

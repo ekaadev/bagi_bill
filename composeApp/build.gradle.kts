@@ -14,6 +14,15 @@ plugins {
 }
 
 kotlin {
+    // Suppress expect/actual beta warning
+    targets.configureEach {
+        compilations.configureEach {
+            compileTaskProvider.get().compilerOptions {
+                freeCompilerArgs.add("-Xexpect-actual-classes")
+            }
+        }
+    }
+
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
@@ -44,6 +53,16 @@ kotlin {
     }
 
     sourceSets {
+        // Configure web source set hierarchy
+        val webMain by creating {
+            dependsOn(commonMain.get())
+            dependencies {
+                implementation(npm("@js-joda/timezone", "2.22.0"))
+            }
+        }
+        jsMain.get().dependsOn(webMain)
+        wasmJsMain.get().dependsOn(webMain)
+
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
@@ -102,9 +121,6 @@ kotlin {
 
             // New
             implementation(libs.sqlite.driver)
-        }
-        webMain.dependencies {
-            implementation(npm("@js-joda/timezone", "2.22.0"))
         }
         iosMain.dependencies {
             // New
