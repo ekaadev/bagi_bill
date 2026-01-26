@@ -93,7 +93,6 @@ private fun CameraUI(
     val scope = rememberCoroutineScope()
 
     // Handle Android back button
-    BackHandler(onBack = onBack)
 
     if (showGalleryPicker) {
         GalleryImagePicker { bytes ->

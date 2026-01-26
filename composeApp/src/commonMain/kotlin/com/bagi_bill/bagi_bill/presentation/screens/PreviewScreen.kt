@@ -78,7 +78,6 @@ fun PreviewScreen(
     val imageBitmap = rememberBitmapFromBytes(photoBytes)
 
     // Handle Android back button
-    BackHandler(onBack = onRetake)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
