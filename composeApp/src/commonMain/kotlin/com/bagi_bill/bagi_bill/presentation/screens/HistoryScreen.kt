@@ -61,6 +61,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bagi_bill.bagi_bill.domain.model.Bill
 import com.bagi_bill.bagi_bill.domain.model.BillStatus
+import com.bagi_bill.bagi_bill.presentation.components.AppContainer
 import com.bagi_bill.bagi_bill.presentation.viewmodel.DateRangeOption
 import com.bagi_bill.bagi_bill.presentation.viewmodel.HistoryViewModel
 import kotlinx.datetime.DateTimeUnit
@@ -101,34 +102,35 @@ fun HistoryScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.background
-                ),
-                title = {
-                    Text(
-                        text = "Riwayat transaksi",
-                        color = Color.Black,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+    AppContainer {
+        Scaffold(
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        scrolledContainerColor = MaterialTheme.colorScheme.background
+                    ),
+                    title = {
+                        Text(
+                            text = "Riwayat transaksi",
+                            color = Color.Black,
+                            style = MaterialTheme.typography.titleMedium
                         )
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-            )
-        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    },
+                    scrollBehavior = scrollBehavior,
+                )
+            }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -319,6 +321,7 @@ fun HistoryScreen(
                 }
             }
         }
+    }
     }
 }
 

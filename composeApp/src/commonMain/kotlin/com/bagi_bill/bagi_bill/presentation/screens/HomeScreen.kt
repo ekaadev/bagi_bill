@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bagi_bill.bagi_bill.domain.model.Bill
+import com.bagi_bill.bagi_bill.presentation.components.AppContainer
 import com.bagi_bill.bagi_bill.presentation.viewmodel.HomeViewModel
 import com.bagi_bill.bagi_bill.getPlatform
 import kotlinx.coroutines.launch
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 @Composable
 fun HomeScreen(
     onNavigateToCamera: () -> Unit = {},
+    onNavigateToManual: () -> Unit = {},
     onNavigateToHistory: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
@@ -39,6 +41,7 @@ fun HomeScreen(
     HomeScreenContent(
         uiState = uiState,
         onNavigateToCamera = onNavigateToCamera,
+        onNavigateToManual = onNavigateToManual,
         onNavigateToHistory = onNavigateToHistory,
         isWeb = platform.isWeb
     )
@@ -552,6 +555,7 @@ fun HomeScreenPreview() {
 internal fun HomeScreenContent(
     uiState: HomeUiState,
     onNavigateToCamera: () -> Unit = {},
+    onNavigateToManual: () -> Unit = {},
     onNavigateToHistory: () -> Unit = {},
     isWeb: Boolean = false
 ) {
@@ -559,63 +563,64 @@ internal fun HomeScreenContent(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.background
-                ),
-                navigationIcon = {},
-                title = {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Bagi Bill",
-                            color = Color.Black,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-
-                        Surface(
-                            onClick = {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("Fitur Draft belum tersedia")
-                                }
-                            },
-                            shape = CircleShape,
-                            color = Color.White,
-                            shadowElevation = 2.dp,
-                            tonalElevation = 4.dp
+    AppContainer {
+        Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        scrolledContainerColor = MaterialTheme.colorScheme.background
+                    ),
+                    navigationIcon = {},
+                    title = {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            Text(
+                                text = "Bagi Bill",
+                                color = Color.Black,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+
+                            Surface(
+                                onClick = {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("Fitur Draft belum tersedia")
+                                    }
+                                },
+                                shape = CircleShape,
+                                color = Color.White,
+                                shadowElevation = 2.dp,
+                                tonalElevation = 4.dp
                             ) {
-                                Text(
-                                    text = "Draft ",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.Black
-                                )
-                                Text(
-                                    text = "(${uiState.draftCount})",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                Row(
+                                    modifier = Modifier
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        text = "Draft ",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.Black
+                                    )
+                                    Text(
+                                        text = "(${uiState.draftCount})",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        scope.launch {
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            scope.launch {
                             snackbarHostState.showSnackbar("Fungsi Bantuan belum tersedia")
                         }
                     }) {
@@ -660,11 +665,7 @@ internal fun HomeScreenContent(
                     )
 
                     CreateNewSplitBillSection(
-                        onNavigateToManual = {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Fitur Manual Input belum tersedia")
-                            }
-                        },
+                        onNavigateToManual = onNavigateToManual,
                         onNavigateToScan = {
                             if (isWeb) {
                                 scope.launch {
@@ -709,9 +710,8 @@ internal fun HomeScreenContent(
                         Button(
                             onClick = {
                                 if (isWeb) {
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar("Fitur Scan OCR hanya tersedia di aplikasi mobile")
-                                    }
+                                    // Di web, navigasi ke manual input
+                                    onNavigateToManual()
                                 } else {
                                     onNavigateToCamera()
                                 }
@@ -723,7 +723,7 @@ internal fun HomeScreenContent(
                             shape = RoundedCornerShape(50)
                         ) {
                             Text(
-                                text = "Scan Sekarang",
+                                text = if (isWeb) "Mulai Split Bill" else "Scan Sekarang",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -733,6 +733,7 @@ internal fun HomeScreenContent(
                 }
             }
         }
+    }
     }
 }
 

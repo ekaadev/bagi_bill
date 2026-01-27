@@ -12,5 +12,17 @@ sealed interface Route {
 
     @Serializable
     data object Camera : Route
+
+    @Serializable
+    data object ItemDetail : Route
+
+    @Serializable
+    data object SelectMember : Route
+
+    @Serializable
+    data object SplitAssignment : Route
+
+    @Serializable
+    data object Result : Route
 }
 
