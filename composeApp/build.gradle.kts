@@ -63,6 +63,13 @@ kotlin {
         jsMain.get().dependsOn(webMain)
         wasmJsMain.get().dependsOn(webMain)
 
+        // Configure iOS source set hierarchy
+        val iosMain by creating {
+            dependsOn(commonMain.get())
+        }
+        iosArm64Main.get().dependsOn(iosMain)
+        iosSimulatorArm64Main.get().dependsOn(iosMain)
+
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)

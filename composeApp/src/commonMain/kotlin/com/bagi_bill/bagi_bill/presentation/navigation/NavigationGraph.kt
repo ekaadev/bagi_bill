@@ -4,10 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.bagi_bill.bagi_bill.presentation.camera.CameraScreen
 import com.bagi_bill.bagi_bill.presentation.screens.HistoryScreen
 import com.bagi_bill.bagi_bill.presentation.screens.HomeScreen
 
-// Setup Navigation Graph untuk mengatur navigasi antar screen
 @Composable
 fun NavigationGraph(
     navController: NavHostController
@@ -16,11 +16,10 @@ fun NavigationGraph(
         navController = navController,
         startDestination = Route.Home
     ) {
-        // Home Screen
         composable<Route.Home> {
             HomeScreen(
                 onNavigateToCamera = {
-                    // TODO: Implementasi navigasi ke Camera Screen
+                    navController.navigate(Route.Camera)
                 },
                 onNavigateToHistory = {
                     navController.navigate(Route.History)
@@ -28,7 +27,6 @@ fun NavigationGraph(
             )
         }
 
-        // History Screen
         composable<Route.History> {
             HistoryScreen(
                 onNavigateBack = {
@@ -37,10 +35,17 @@ fun NavigationGraph(
             )
         }
 
-        // Camera Screen (untuk nanti)
         composable<Route.Camera> {
-            // TODO: Implementasi Camera Screen
+            CameraScreen(
+                onExit = {
+                    navController.popBackStack()
+                },
+                onPhotoConfirmed = { photoBytes ->
+                    // TODO: Navigate to OCR result screen with photoBytes
+                    // For now, just go back to home
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }
-
