@@ -39,6 +39,7 @@ import com.bagi_bill.bagi_bill.domain.parser.ParsedReceipt
 import com.bagi_bill.bagi_bill.presentation.theme.AppTheme
 import com.bagi_bill.bagi_bill.presentation.util.rememberBitmapFromBytes
 import org.jetbrains.compose.resources.painterResource
+import com.bagi_bill.bagi_bill.presentation.components.DraftConfirmationDialog
 
 /**
  * RincianScreen - Displays parsed receipt data (read-only mode).
@@ -58,6 +59,8 @@ fun RincianScreen(
     parsedReceipt: ParsedReceipt,
     imageBytes: ByteArray? = null,
     onBack: () -> Unit,
+    onExitToHome: () -> Unit = {},
+    onSaveDraft: () -> Unit = {},
     onRetakePhoto: () -> Unit = {},
     onEditDetails: () -> Unit = {},
     onConfirm: () -> Unit = {},
@@ -69,6 +72,9 @@ fun RincianScreen(
     var showDrawer by remember { mutableStateOf(false) }
     var tempAdditionalInfo by remember { mutableStateOf(additionalInfo) }
     val drawerState = rememberModalBottomSheetState()
+    
+    // Draft dialog state
+    var showDraftDialog by remember { mutableStateOf(false) }
 
     // Convert ByteArray to ImageBitmap
     val capturedImage: ImageBitmap? = rememberBitmapFromBytes(imageBytes)
@@ -78,6 +84,20 @@ fun RincianScreen(
     val isScrolled by remember {
         derivedStateOf { listState.firstVisibleItemScrollOffset > 50 || listState.firstVisibleItemIndex > 0 }
     }
+    
+    // Draft confirmation dialog
+    DraftConfirmationDialog(
+        showDialog = showDraftDialog,
+        onDismiss = { showDraftDialog = false },
+        onSaveDraft = {
+            showDraftDialog = false
+            onSaveDraft()
+        },
+        onDiscard = {
+            showDraftDialog = false
+            onExitToHome()
+        }
+    )
 
     Box(
         modifier = modifier
@@ -111,7 +131,7 @@ fun RincianScreen(
                             windowInsets = WindowInsets.statusBars,
                             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
                             navigationIcon = {
-                                IconButton(onClick = onBack) {
+                                IconButton(onClick = { showDraftDialog = true }) {
                                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.Black)
                                 }
                             },
@@ -140,7 +160,7 @@ fun RincianScreen(
                             navigationIcon = {
                                 WhiteCircleIconButton(
                                     icon = Icons.AutoMirrored.Filled.ArrowBack,
-                                    onClick = onBack,
+                                    onClick = { showDraftDialog = true },
                                     contentDescription = "Back",
                                     modifier = Modifier.padding(start = AppTheme.Spacing.large)
                                 )

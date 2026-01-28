@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 fun HomeScreen(
     onNavigateToCamera: () -> Unit = {},
     onNavigateToHistory: () -> Unit = {},
+    onNavigateToDraft: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -40,6 +41,7 @@ fun HomeScreen(
         uiState = uiState,
         onNavigateToCamera = onNavigateToCamera,
         onNavigateToHistory = onNavigateToHistory,
+        onNavigateToDraft = onNavigateToDraft,
         isWeb = platform.isWeb
     )
 }
@@ -553,6 +555,7 @@ internal fun HomeScreenContent(
     uiState: HomeUiState,
     onNavigateToCamera: () -> Unit = {},
     onNavigateToHistory: () -> Unit = {},
+    onNavigateToDraft: () -> Unit = {},
     isWeb: Boolean = false
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -585,11 +588,7 @@ internal fun HomeScreenContent(
                         )
 
                         Surface(
-                            onClick = {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("Fitur Draft belum tersedia")
-                                }
-                            },
+                            onClick = onNavigateToDraft,
                             shape = CircleShape,
                             color = Color.White,
                             shadowElevation = 2.dp,

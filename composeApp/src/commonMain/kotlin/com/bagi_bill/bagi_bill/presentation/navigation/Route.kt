@@ -24,4 +24,10 @@ sealed interface Route {
 
     @Serializable
     data object SplitBill : Route
+
+    @Serializable
+    data object Done : Route
+
+    @Serializable
+    data object Draft : Route
 }

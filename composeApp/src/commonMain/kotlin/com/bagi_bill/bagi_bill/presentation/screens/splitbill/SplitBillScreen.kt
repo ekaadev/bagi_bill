@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.bagi_bill.bagi_bill.domain.parser.ParsedReceipt
 import com.bagi_bill.bagi_bill.presentation.screens.selectmember.SplitBillData
 import com.bagi_bill.bagi_bill.presentation.theme.AppTheme
+import com.bagi_bill.bagi_bill.presentation.components.DraftConfirmationDialog
 
 // Background color matching other screens
 private val BoneWhite = Color(0xFFF5F5F5)
@@ -42,6 +43,8 @@ fun SplitBillScreen(
     splitBillData: SplitBillData,
     parsedReceipt: ParsedReceipt,
     onBack: () -> Unit,
+    onExitToHome: () -> Unit = {},
+    onSaveDraft: () -> Unit = {},
     onEditMembers: () -> Unit,
     onSend: (List<AssignableBillItem>) -> Unit
 ) {
@@ -52,6 +55,9 @@ fun SplitBillScreen(
     
     // State: Selected member for assignment
     var selectedMemberId by remember { mutableStateOf(members.firstOrNull()?.id ?: "") }
+    
+    // Draft dialog state
+    var showDraftDialog by remember { mutableStateOf(false) }
     
     // State: Bill items with assignments
     val billItems = remember(parsedReceipt) {
@@ -92,6 +98,20 @@ fun SplitBillScreen(
     // Confirm button enabled only when all items are assigned
     val allItemsAssigned = billItems.isNotEmpty() && billItems.all { it.assignedMemberIds.isNotEmpty() }
     
+    // Draft confirmation dialog
+    DraftConfirmationDialog(
+        showDialog = showDraftDialog,
+        onDismiss = { showDraftDialog = false },
+        onSaveDraft = {
+            showDraftDialog = false
+            onSaveDraft()
+        },
+        onDiscard = {
+            showDraftDialog = false
+            onExitToHome()
+        }
+    )
+    
     // Screen switching animation
     AnimatedContent(
         targetState = editingItemIndex,
@@ -128,7 +148,7 @@ fun SplitBillScreen(
                             ) 
                         },
                         navigationIcon = {
-                            IconButton(onClick = onBack) {
+                            IconButton(onClick = { showDraftDialog = true }) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                             }
                         },

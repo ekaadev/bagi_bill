@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.BasicTextField
 import com.bagi_bill.bagi_bill.presentation.theme.AppTheme
+import com.bagi_bill.bagi_bill.presentation.components.DraftConfirmationDialog
 
 /**
  * Select Member screen for choosing split bill participants.
@@ -38,6 +39,8 @@ import com.bagi_bill.bagi_bill.presentation.theme.AppTheme
 @Composable
 fun SelectMemberScreen(
     onBack: () -> Unit,
+    onExitToHome: () -> Unit = {},
+    onSaveDraft: () -> Unit = {},
     onConfirm: (SplitBillData) -> Unit,
     contacts: List<PhoneContact> = emptyList(),
     isLoadingContacts: Boolean = false,
@@ -58,6 +61,7 @@ fun SelectMemberScreen(
     var showReplacePayer by remember { mutableStateOf(false) }
     var showAddManual by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var showDraftDialog by remember { mutableStateOf(false) }
     
     val filteredContacts = remember(searchQuery, contacts) {
         if (searchQuery.isBlank()) contacts
@@ -70,6 +74,20 @@ fun SelectMemberScreen(
     val selectedContactIds = remember(selectedMembers) {
         selectedMembers.map { it.id }.toSet()
     }
+    
+    // Draft confirmation dialog
+    DraftConfirmationDialog(
+        showDialog = showDraftDialog,
+        onDismiss = { showDraftDialog = false },
+        onSaveDraft = {
+            showDraftDialog = false
+            onSaveDraft()
+        },
+        onDiscard = {
+            showDraftDialog = false
+            onExitToHome()
+        }
+    )
     
     AnimatedContent(
         targetState = showReplacePayer,
@@ -110,7 +128,7 @@ fun SelectMemberScreen(
                 isLoadingContacts = isLoadingContacts,
                 hasContactPermission = hasContactPermission,
                 onSearchChange = { searchQuery = it },
-                onBack = onBack,
+                onBack = { showDraftDialog = true },
                 onChangePayer = { showReplacePayer = true },
                 onAddManual = { showAddManual = true },
                 onRequestPermission = onRequestPermission,
