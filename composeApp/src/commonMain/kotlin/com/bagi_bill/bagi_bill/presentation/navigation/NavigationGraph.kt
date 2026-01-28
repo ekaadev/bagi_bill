@@ -25,6 +25,7 @@ import com.bagi_bill.bagi_bill.presentation.screens.HomeScreen
 import com.bagi_bill.bagi_bill.presentation.screens.rincian.RincianScreen
 import com.bagi_bill.bagi_bill.presentation.screens.rincian.UbahRincianScreen
 import com.bagi_bill.bagi_bill.presentation.screens.selectmember.SelectMemberScreen
+import com.bagi_bill.bagi_bill.presentation.screens.splitbill.SplitBillScreen
 import com.bagi_bill.bagi_bill.presentation.viewmodel.ScanViewModel
 import kotlinx.coroutines.launch
 
@@ -177,23 +178,60 @@ fun NavigationGraph(
             // Get contact state with permission handling
             val (contactState, requestPermission) = rememberContactState()
             
+            // Check if we have existing data (coming back from SplitBill "Ubah anggota")
+            val existingSplitBillData by scanViewModel.splitBillData.collectAsState()
+            
             SelectMemberScreen(
                 onBack = {
                     navController.popBackStack()
                 },
                 onConfirm = { splitBillData ->
-                    // TODO: Navigate to SplitBill screen with data
-                    // For now, go back to home
-                    scanViewModel.clearData()
-                    navController.navigate(Route.Home) {
-                        popUpTo(Route.Home) { inclusive = true }
-                    }
+                    // Store data and navigate to SplitBill screen
+                    scanViewModel.setSplitBillData(splitBillData)
+                    navController.navigate(Route.SplitBill)
                 },
                 contacts = contactState.contacts,
                 isLoadingContacts = contactState.isLoading,
                 hasContactPermission = contactState.hasPermission,
-                onRequestPermission = requestPermission
+                onRequestPermission = requestPermission,
+                // Pass existing data for state persistence
+                initialPayer = existingSplitBillData?.payer,
+                initialMembers = existingSplitBillData?.members ?: emptyList()
             )
+        }
+
+        // ===== SPLIT BILL SCREEN =====
+        composable<Route.SplitBill> {
+            val parsedReceipt by scanViewModel.parsedReceipt.collectAsState()
+            val splitBillData by scanViewModel.splitBillData.collectAsState()
+
+            if (parsedReceipt != null && splitBillData != null) {
+                SplitBillScreen(
+                    splitBillData = splitBillData!!,
+                    parsedReceipt = parsedReceipt!!,
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onEditMembers = {
+                        navController.popBackStack()
+                    },
+                    onSend = { assignedItems ->
+                        // TODO: Send to members / DoneScreen
+                        scanViewModel.clearData()
+                        navController.navigate(Route.Home) {
+                            popUpTo(Route.Home) { inclusive = true }
+                        }
+                    }
+                )
+            } else {
+                // Fallback if data is missing
+                LaunchedEffect(Unit) {
+                    navController.navigate(Route.Home) {
+                        popUpTo(Route.Home) { inclusive = true }
+                    }
+                }
+            }
         }
     }
 }
+
