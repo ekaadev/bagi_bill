@@ -1,6 +1,7 @@
 package com.bagi_bill.bagi_bill.presentation.screens.selectmember
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,9 +16,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.bagi_bill.bagi_bill.presentation.theme.AppTheme
 
 /**
  * Screen to replace/change the current payer.
@@ -45,26 +49,42 @@ fun ReplacePayerContent(
             )
         },
         bottomBar = {
+            // Match RincianScreen bottom bar style exactly
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shadowElevation = 8.dp,
-                color = MaterialTheme.colorScheme.surface
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(
+                        elevation = AppTheme.Elevation.bottomSticky,
+                        clip = false,
+                        spotColor = Color.Black,
+                        ambientColor = Color.Black
+                    ),
+                color = Color.White,
+                shape = AppTheme.Shapes.bottomSheet
             ) {
-                Button(
-                    onClick = { onConfirm(selectedPayer) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(25.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
+                Column(
+                    modifier = Modifier.padding(
+                        start = AppTheme.Spacing.large,
+                        end = AppTheme.Spacing.large,
+                        top = AppTheme.Spacing.xLarge,
+                        bottom = AppTheme.Spacing.xLarge
                     )
                 ) {
-                    Text(
-                        text = "Konfirmasi",
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        fontWeight = FontWeight.Medium
-                    )
+                    Button(
+                        onClick = { onConfirm(selectedPayer) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(AppTheme.Size.buttonHeight),
+                        colors = ButtonDefaults.buttonColors(contentColor = Color.White),
+                        shape = AppTheme.Shapes.pill
+                    ) {
+                        Text(
+                            text = "Konfirmasi",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }

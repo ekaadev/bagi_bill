@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -195,30 +196,47 @@ private fun SelectMemberContent(
             )
         },
         bottomBar = {
-            // Consistent with RincianScreen bottom bar
+            // Match RincianScreen bottom bar style exactly
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shadowElevation = 8.dp,
-                color = Color.White
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(
+                        elevation = AppTheme.Elevation.bottomSticky,
+                        clip = false,
+                        spotColor = Color.Black,
+                        ambientColor = Color.Black
+                    ),
+                color = Color.White,
+                shape = AppTheme.Shapes.bottomSheet
             ) {
-                Button(
-                    onClick = onConfirm,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp)
-                        .height(48.dp),
-                    enabled = selectedMembers.isNotEmpty(),
-                    shape = RoundedCornerShape(AppTheme.Radius.button),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        disabledContainerColor = Color.Gray.copy(alpha = 0.3f)
+                Column(
+                    modifier = Modifier.padding(
+                        start = AppTheme.Spacing.large,
+                        end = AppTheme.Spacing.large,
+                        top = AppTheme.Spacing.xLarge,
+                        bottom = AppTheme.Spacing.xLarge
                     )
                 ) {
-                    Text(
-                        text = "Konfirmasi",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
-                    )
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(AppTheme.Size.buttonHeight),
+                        enabled = selectedMembers.isNotEmpty(),
+                        colors = ButtonDefaults.buttonColors(
+                            contentColor = Color.White,
+                            disabledContainerColor = Color.Gray.copy(alpha = 0.3f),
+                            disabledContentColor = Color.White
+                        ),
+                        shape = AppTheme.Shapes.pill
+                    ) {
+                        Text(
+                            text = "Konfirmasi",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }
