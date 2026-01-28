@@ -18,4 +18,10 @@ sealed interface Route {
 
     @Serializable
     data object UbahRincian : Route
+
+    @Serializable
+    data object SelectMember : Route
+
+    @Serializable
+    data object SplitBill : Route
 }
