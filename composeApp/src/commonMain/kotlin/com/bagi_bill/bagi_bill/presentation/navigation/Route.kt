@@ -12,5 +12,10 @@ sealed interface Route {
 
     @Serializable
     data object Camera : Route
-}
 
+    @Serializable
+    data object Rincian : Route
+
+    @Serializable
+    data object UbahRincian : Route
+}
