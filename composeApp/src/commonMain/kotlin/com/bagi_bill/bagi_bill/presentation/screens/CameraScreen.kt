@@ -1,5 +1,9 @@
 package com.bagi_bill.bagi_bill
 
+import com.bagi_bill.bagi_bill.presentation.camera.CameraController
+import com.bagi_bill.bagi_bill.presentation.camera.CameraPreview
+import com.bagi_bill.bagi_bill.presentation.camera.GalleryImagePicker
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -332,6 +336,3 @@ private fun CameraUI(
         }
     }
 }
-
-@Composable
-expect fun GalleryImagePicker(onImagePicked: (ByteArray?) -> Unit)

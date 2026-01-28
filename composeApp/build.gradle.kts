@@ -171,6 +171,11 @@ compose.desktop {
             packageName = "com.bagi_bill.bagi_bill"
             packageVersion = "1.0.0"
         }
+        windows {
+            menu = true
+            shortcut = true
+            // icon = file("src/desktopMain/resources/icon.ico") // Jika punya icon
+        }
     }
 }
 
