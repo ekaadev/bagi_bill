@@ -3,12 +3,13 @@ package com.bagi_bill.bagi_bill.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import com.bagi_bill.bagi_bill.domain.parser.ParsedReceipt
 import com.bagi_bill.bagi_bill.presentation.screens.selectmember.SplitBillData
+import com.bagi_bill.bagi_bill.presentation.screens.splitbill.AssignableBillItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * ViewModel for sharing scan results between Camera, Rincian, SelectMember, and SplitBill screens.
+ * ViewModel for sharing scan results between Camera, Rincian, SelectMember, SplitBill, and Done screens.
  */
 class ScanViewModel : ViewModel() {
     
@@ -27,6 +28,14 @@ class ScanViewModel : ViewModel() {
     // SplitBillData from SelectMember screen
     private val _splitBillData = MutableStateFlow<SplitBillData?>(null)
     val splitBillData: StateFlow<SplitBillData?> = _splitBillData.asStateFlow()
+
+    // Assigned items for DoneScreen
+    private val _assignedItems = MutableStateFlow<List<AssignableBillItem>>(emptyList())
+    val assignedItems: StateFlow<List<AssignableBillItem>> = _assignedItems.asStateFlow()
+
+    // Transaction date for DoneScreen
+    private val _transactionDate = MutableStateFlow("")
+    val transactionDate: StateFlow<String> = _transactionDate.asStateFlow()
 
     fun setParsedReceipt(receipt: ParsedReceipt) {
         _parsedReceipt.value = receipt
@@ -52,10 +61,21 @@ class ScanViewModel : ViewModel() {
         _splitBillData.value = data
     }
 
+    fun setAssignedItems(items: List<AssignableBillItem>) {
+        _assignedItems.value = items
+    }
+
+    fun setTransactionDate(date: String) {
+        _transactionDate.value = date
+    }
+
     fun clearData() {
         _parsedReceipt.value = null
         _imageBytes.value = null
         _errorMessage.value = null
         _splitBillData.value = null
+        _assignedItems.value = emptyList()
+        _transactionDate.value = ""
     }
 }
+

@@ -30,17 +30,19 @@ data class SplitBillData(
     val payer: SelectableMember,
     val members: List<SelectableMember>,
     val totalMembers: Int,
-    val membersWithPaymentInfo: Int
+    val membersWithPaymentInfo: Int,
+    val merchantName: String = "Merchant"
 ) {
     companion object {
-        fun create(payer: SelectableMember, members: List<SelectableMember>): SplitBillData {
+        fun create(payer: SelectableMember, members: List<SelectableMember>, merchantName: String = "Merchant"): SplitBillData {
             val allMembers = listOf(payer) + members
             val withPaymentInfo = allMembers.count { it.canBePayer() }
             return SplitBillData(
                 payer = payer,
                 members = members,
                 totalMembers = allMembers.size,
-                membersWithPaymentInfo = withPaymentInfo
+                membersWithPaymentInfo = withPaymentInfo,
+                merchantName = merchantName
             )
         }
     }
