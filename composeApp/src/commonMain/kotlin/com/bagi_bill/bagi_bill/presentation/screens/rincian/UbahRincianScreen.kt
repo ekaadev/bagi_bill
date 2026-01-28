@@ -366,7 +366,9 @@ private fun CompactItemRow(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     modifier = Modifier.onFocusChanged { focusState ->
-                        if (focusState.isFocused && item.qty == "0") {
+                        // Clear value on focus to provide "select all" behavior
+                        // so typing immediately replaces the existing value
+                        if (focusState.isFocused && item.qty.isNotEmpty()) {
                             onItemChange(item.copy(qty = ""))
                         }
                     },

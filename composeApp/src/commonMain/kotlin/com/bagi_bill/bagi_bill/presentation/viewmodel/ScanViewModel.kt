@@ -2,12 +2,13 @@ package com.bagi_bill.bagi_bill.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.bagi_bill.bagi_bill.domain.parser.ParsedReceipt
+import com.bagi_bill.bagi_bill.presentation.screens.selectmember.SplitBillData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * ViewModel for sharing scan results between Camera, Rincian, and UbahRincian screens.
+ * ViewModel for sharing scan results between Camera, Rincian, SelectMember, and SplitBill screens.
  */
 class ScanViewModel : ViewModel() {
     
@@ -22,6 +23,10 @@ class ScanViewModel : ViewModel() {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    // SplitBillData from SelectMember screen
+    private val _splitBillData = MutableStateFlow<SplitBillData?>(null)
+    val splitBillData: StateFlow<SplitBillData?> = _splitBillData.asStateFlow()
 
     fun setParsedReceipt(receipt: ParsedReceipt) {
         _parsedReceipt.value = receipt
@@ -43,9 +48,14 @@ class ScanViewModel : ViewModel() {
         _errorMessage.value = null
     }
 
+    fun setSplitBillData(data: SplitBillData) {
+        _splitBillData.value = data
+    }
+
     fun clearData() {
         _parsedReceipt.value = null
         _imageBytes.value = null
         _errorMessage.value = null
+        _splitBillData.value = null
     }
 }

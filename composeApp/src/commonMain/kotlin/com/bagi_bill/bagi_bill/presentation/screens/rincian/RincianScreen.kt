@@ -185,7 +185,12 @@ fun RincianScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(AppTheme.Size.buttonHeight),
-                            colors = ButtonDefaults.buttonColors(contentColor = Color.White),
+                            enabled = parsedReceipt.items.isNotEmpty(),
+                            colors = ButtonDefaults.buttonColors(
+                                contentColor = Color.White,
+                                disabledContainerColor = Color.Gray.copy(alpha = 0.3f),
+                                disabledContentColor = Color.White
+                            ),
                             shape = AppTheme.Shapes.pill
                         ) {
                             Text(
