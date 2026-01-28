@@ -18,11 +18,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.bagi_bill.bagi_bill.domain.parser.parseReceiptText
 import com.bagi_bill.bagi_bill.presentation.camera.CameraScreen
+import com.bagi_bill.bagi_bill.presentation.contacts.rememberContactState
 import com.bagi_bill.bagi_bill.presentation.ocr.TextRecognitionService
 import com.bagi_bill.bagi_bill.presentation.screens.HistoryScreen
 import com.bagi_bill.bagi_bill.presentation.screens.HomeScreen
 import com.bagi_bill.bagi_bill.presentation.screens.rincian.RincianScreen
 import com.bagi_bill.bagi_bill.presentation.screens.rincian.UbahRincianScreen
+import com.bagi_bill.bagi_bill.presentation.screens.selectmember.SelectMemberScreen
 import com.bagi_bill.bagi_bill.presentation.viewmodel.ScanViewModel
 import kotlinx.coroutines.launch
 
@@ -134,12 +136,8 @@ fun NavigationGraph(
                         navController.navigate(Route.UbahRincian)
                     },
                     onConfirm = {
-                        // TODO: Navigate to member selection
-                        // For now, go back to home
-                        scanViewModel.clearData()
-                        navController.navigate(Route.Home) {
-                            popUpTo(Route.Home) { inclusive = true }
-                        }
+                        // Navigate to member selection
+                        navController.navigate(Route.SelectMember)
                     }
                 )
             } else {
@@ -172,6 +170,30 @@ fun NavigationGraph(
                     navController.popBackStack()
                 }
             }
+        }
+
+        // ===== SELECT MEMBER SCREEN =====
+        composable<Route.SelectMember> {
+            // Get contact state with permission handling
+            val (contactState, requestPermission) = rememberContactState()
+            
+            SelectMemberScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                onConfirm = { splitBillData ->
+                    // TODO: Navigate to SplitBill screen with data
+                    // For now, go back to home
+                    scanViewModel.clearData()
+                    navController.navigate(Route.Home) {
+                        popUpTo(Route.Home) { inclusive = true }
+                    }
+                },
+                contacts = contactState.contacts,
+                isLoadingContacts = contactState.isLoading,
+                hasContactPermission = contactState.hasPermission,
+                onRequestPermission = requestPermission
+            )
         }
     }
 }
