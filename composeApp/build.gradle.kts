@@ -1,3 +1,4 @@
+import org.gradle.kotlin.dsl.implementation
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -119,7 +120,11 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            // Dependency yang benar ada di sini
+            implementation(libs.sqlite.driver) // Jika ini mengarah ke app.cash.sqldelight:sqlite-driver
 
+            // Tambahkan driver JDBC manual di sini
+            implementation("org.xerial:sqlite-jdbc:3.45.1.0")
             // New
             implementation(libs.sqlite.driver)
         }
@@ -167,14 +172,21 @@ compose.desktop {
         mainClass = "com.bagi_bill.bagi_bill.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            // Saya tambahkan .Exe juga karena Anda tadi menanyakan .exe
+            targetFormats(TargetFormat.Msi, TargetFormat.Exe, TargetFormat.Deb)
+
+            modules("java.sql")
+
             packageName = "com.bagi_bill.bagi_bill"
             packageVersion = "1.0.0"
-        }
-        windows {
-            menu = true
-            shortcut = true
-            // icon = file("src/desktopMain/resources/icon.ico") // Jika punya icon
+
+            // --- PERBAIKAN: Blok windows WAJIB di dalam sini ---
+            windows {
+                menu = true
+                shortcut = true
+                // upgradeUuid = "..." // Opsional: Tambahkan ini jika nanti error saat build MSI
+            }
+            // ---------------------------------------------------
         }
     }
 }
